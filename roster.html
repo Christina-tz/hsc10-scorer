@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f1420">
+<title>第十届幻术杯 · 参赛名单（按队）</title>
+<style>
+  :root{
+    --bg:#0f1420; --card:#1a2233; --card2:#212c42; --card3:#18202f; --line:#2c3a55;
+    --txt:#e8edf7; --sub:#9aa7bf; --dim:#6b788f;
+    --acc:#ffb13d; --acc2:#4da3ff; --good:#35c46b; --bad:#ff5d6c; --purple:#a78bfa;
+    --radius:14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--txt); line-height:1.5; font-size:15px;
+    -webkit-font-smoothing:antialiased; padding-bottom:40px;
+  }
+  .wrap{max-width:860px; margin:0 auto; padding:0 12px;}
+
+  /* header */
+  .head{
+    position:sticky; top:0; z-index:20;
+    background:rgba(15,20,32,.94); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line); padding:10px 0 9px;
+  }
+  .head-inner{max-width:860px; margin:0 auto; padding:0 12px;}
+  .head h1{margin:0; font-size:16px; font-weight:700;}
+  .head h1 .num{color:var(--acc2);}
+  .head .sub{font-size:11.5px; color:var(--dim); margin-top:2px;}
+  .stats{display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;}
+  .stat{
+    font-size:11.5px; padding:3px 9px; border-radius:20px;
+    background:var(--card2); border:1px solid var(--line); color:var(--sub);
+  }
+  .stat b{color:var(--txt); font-weight:700;}
+  .stat.g b{color:var(--good);} .stat.a b{color:var(--acc);} .stat.p b{color:var(--purple);}
+
+  /* callout */
+  .callout{
+    margin:12px 0 0; padding:12px 14px; border-radius:12px;
+    background:linear-gradient(180deg, rgba(53,196,107,.10), rgba(53,196,107,.04));
+    border:1px solid rgba(53,196,107,.35);
+  }
+  .callout h3{
+    margin:0 0 6px; font-size:12px; color:var(--good); font-weight:700; letter-spacing:.04em;
+    display:flex; align-items:center; gap:6px;
+  }
+  .callout ul{margin:0; padding-left:16px; font-size:13px; color:var(--sub); line-height:1.85;}
+  .callout li b{color:var(--txt); font-weight:600;}
+
+  /* section title */
+  .sec-t{
+    display:flex; align-items:baseline; gap:8px; margin:20px 0 10px;
+  }
+  .sec-t h2{margin:0; font-size:14px; font-weight:700; color:var(--acc2);}
+  .sec-t .hint{font-size:11.5px; color:var(--dim);}
+  .sec-t .line{flex:1; height:1px; background:var(--line);}
+
+  /* team grid */
+  .teams{display:grid; grid-template-columns:1fr; gap:12px;}
+  @media(min-width:760px){ .teams{grid-template-columns:1fr 1fr;} }
+
+  .team{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .team-h{
+    display:flex; align-items:center; gap:8px; padding:11px 13px;
+    border-bottom:1px solid var(--line); background:var(--card3);
+  }
+  .team-h .dot{width:6px; height:6px; border-radius:50%; background:var(--acc2); flex-shrink:0;}
+  .team-h .tname{
+    flex:1; font-size:14.5px; font-weight:700; min-width:0;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .team-h .cnt{
+    font-size:11px; padding:2px 7px; border-radius:6px; background:var(--card2);
+    border:1px solid var(--line); color:var(--sub); flex-shrink:0;
+  }
+  .team-h .cnt.full{color:var(--good); border-color:rgba(53,196,107,.4);}
+  .team-h .cnt.short{color:var(--acc); border-color:rgba(255,177,61,.4);}
+
+  .prow{
+    display:flex; gap:10px; padding:10px 13px; border-bottom:1px solid rgba(44,58,85,.5);
+    align-items:flex-start;
+  }
+  .prow:last-child{border-bottom:none;}
+  .prow.empty{opacity:.55;}
+
+  .ptime{
+    width:64px; flex-shrink:0; text-align:center; padding-top:1px;
+  }
+  .ptime .pd{font-size:11px; color:var(--dim); line-height:1.2;}
+  .ptime .pwd{
+    display:inline-block; font-size:10px; color:var(--acc2); margin:1px 0;
+    padding:0 4px; border-radius:4px; background:rgba(77,163,255,.12);
+  }
+  .ptime .pt{font-size:14.5px; font-weight:800; color:var(--acc); font-variant-numeric:tabular-nums; line-height:1.15;}
+
+  .pinfo{flex:1; min-width:0;}
+  .pname{font-size:14.5px; font-weight:600; word-break:break-all;}
+  .pcast{margin-top:4px; font-size:11.5px; color:var(--sub); display:flex; flex-wrap:wrap; gap:5px; align-items:center;}
+  .seat{
+    padding:1px 6px; border-radius:5px; background:var(--card2);
+    border:1px solid var(--line); font-size:11px; color:var(--txt);
+  }
+  .seat.none{border-style:dashed; color:var(--dim); background:transparent;}
+  .tag{
+    font-size:10.5px; font-weight:700; padding:1px 6px; border-radius:5px; flex-shrink:0;
+  }
+  .tag.f{color:#0e2a18; background:var(--good);}
+  .tag.m{color:var(--acc); background:rgba(255,177,61,.12); border:1px solid rgba(255,177,61,.35);}
+  .tag.n{color:var(--dim); background:transparent; border:1px solid var(--line);}
+
+  /* time table */
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; margin-top:12px;}
+  .card-head{display:flex; align-items:center; gap:8px; padding:12px 14px; cursor:pointer; user-select:none;}
+  .card-head .bar{width:4px; height:15px; border-radius:2px; background:var(--acc2);}
+  .card-head h2{margin:0; font-size:14px; color:var(--acc2);}
+  .card-head .st{flex:1; text-align:right; font-size:11.5px; color:var(--dim);}
+  .card-head .arrow{color:var(--dim); font-size:11px; transition:.2s;}
+  .card.collapsed .arrow{transform:rotate(-90deg);}
+  .card.collapsed .card-body{display:none;}
+
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{
+    text-align:left; font-weight:600; color:var(--dim); font-size:11.5px;
+    padding:7px 10px; border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+    background:var(--card3); white-space:nowrap;
+  }
+  td{padding:8px 10px; border-bottom:1px solid rgba(44,58,85,.45); vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  td.when{white-space:nowrap; font-variant-numeric:tabular-nums;}
+  td.when b{color:var(--acc);}
+  td.when .wd{color:var(--acc2); font-size:11.5px; margin-left:3px;}
+  td.who{font-weight:600;}
+  td.team{color:var(--sub); font-size:12.5px;}
+  td.ca{white-space:nowrap;}
+
+  .foot{font-size:11.5px; color:var(--dim); line-height:1.9; margin:16px 0 0; padding:12px 14px;
+    background:var(--card3); border:1px dashed var(--line); border-radius:12px;}
+  .foot b{color:var(--sub);}
+
+  .btnrow{display:flex; gap:9px; margin:16px 0 0;}
+  .btnrow button{
+    flex:1; padding:12px; font-size:14px; font-weight:700; border-radius:11px; cursor:pointer;
+    background:var(--card2); color:var(--txt); border:1px solid var(--line);
+  }
+  .btnrow button.primary{background:var(--acc2); color:#fff; border-color:transparent;}
+  .btnrow button:active{transform:scale(.99);}
+
+  #toast{
+    position:fixed; left:50%; bottom:28px; transform:translate(-50%,14px);
+    background:#2b3a55; color:#fff; padding:9px 18px; border-radius:20px; font-size:13px; font-weight:600;
+    opacity:0; pointer-events:none; transition:.22s; z-index:99; border:1px solid var(--line);
+  }
+  #toast.show{opacity:1; transform:translate(-50%,0);}
+</style>
+</head>
+<body>
+
+<div class="head">
+  <div class="head-inner">
+    <h1>第十届幻术杯 <span class="num">参赛名单</span></h1>
+    <div class="sub">按队伍归类 · 不含替补 · 时间含星期（2026 年 11 月）</div>
+    <div class="stats" id="stats"></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="callout">
+    <h3>◉ 解说席已满的对局 <span id="fullCount" style="color:var(--sub);font-weight:400"></span></h3>
+    <ul id="fullList"></ul>
+  </div>
+
+  <div class="sec-t">
+    <h2>按队伍查看</h2>
+    <div class="hint">8 队 · 28 名选手</div>
+    <div class="line"></div>
+  </div>
+
+  <div class="teams" id="teams"></div>
+
+  <div class="card collapsed" id="tblCard">
+    <div class="card-head" id="tblToggle">
+      <div class="bar"></div>
+      <h2>按时间速查</h2>
+      <div class="st">共 32 个场次 · 其中 4 个待定</div>
+      <div class="arrow">▾</div>
+    </div>
+    <div class="card-body">
+      <table>
+        <thead>
+          <tr><th>时间</th><th>选手</th><th>队伍</th><th>解说席</th></tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="btnrow">
+    <button class="primary" id="btnCopy">复制文字版</button>
+    <button id="btnToggle">展开按时间表</button>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============ 数据（逐格核对自《第十届幻术杯赛程解说安排》） ============ */
+const WD = {9:'周一',10:'周二',11:'周三',12:'周四',13:'周五',14:'周六',15:'周日',
+            16:'周一',17:'周二',18:'周三',19:'周四'};
+
+// cast 固定 3 个席位，空串代表该席空缺（保留位置，便于看出缺几席）
+const D = [
+  {d:9,  t:'14:00', p:'',          team:'',               cast:['','','']},
+  {d:9,  t:'18:00', p:'钠镓Channel', team:'久寒逢佳阳',        cast:['玖玥','','']},
+  {d:9,  t:'22:00', p:'天离beta',    team:'PTZE喷气背包批发商',  cast:['普通集批','烛萤','逢生']},
+
+  {d:10, t:'14:00', p:'哲三Philosophy_3', team:'追忆铁锤队',    cast:['玖玥','逢生','AcCLR']},
+  {d:10, t:'18:00', p:'余余银',       team:'银不了的游戏',     cast:['','玖玥','逢生']},
+  {d:10, t:'22:00', p:'',            team:'',               cast:['','','']},
+
+  {d:11, t:'14:00', p:'飘渺',         team:'银不了的游戏',     cast:['玖玥','','']},
+  {d:11, t:'18:00', p:'特南辛罗',      team:'黑流树海享受者',    cast:['玖玥','','']},
+  {d:11, t:'22:00', p:'',            team:'',               cast:['','','']},
+
+  {d:12, t:'14:00', p:'皮、蛋、、',     team:'PTZE喷气背包批发商',  cast:['普通集批','逢生','']},
+  {d:12, t:'18:00', p:'青岛萌香',      team:'怀香赴孤凉',       cast:['玖玥','孤玖','']},
+  {d:12, t:'22:00', p:'绵阳怪兽',      team:'久寒逢佳阳',       cast:['玖玥','孤玖','']},
+
+  {d:13, t:'14:00', p:'E某人QAQ',     team:'PTZE喷气背包批发商',  cast:['玖玥','逢生','']},
+  {d:13, t:'18:00', p:'闲空',         team:'不期出马头…队',     cast:['玖玥','逢生','']},
+  {d:13, t:'22:00', p:'x2048x',      team:'银不了的游戏',     cast:['普通集批','AcCLR','']},
+
+  {d:14, t:'14:00', p:'怀殇殇殇',      team:'怀香赴孤凉',       cast:['玖玥','AcCLR','孤玖']},
+  {d:14, t:'18:00', p:'青云_YunQing', team:'追忆铁锤队',       cast:['玖玥','烛萤','']},
+  {d:14, t:'22:00', p:'Pharmacist',  team:'不期出马头…队',     cast:['玖玥','普通集批','']},
+
+  {d:15, t:'14:00', p:'小小满QwQ',    team:'追忆铁锤队',       cast:['','烛萤','']},
+  {d:15, t:'18:00', p:'苏云',         team:'黑流树海享受者',    cast:['玖玥','','']},
+  {d:15, t:'22:00', p:'欧的堵',       team:'堵灵可可',         cast:['玖玥','逢生','普通集批']},
+
+  {d:16, t:'14:00', p:'里尔',         team:'黑流树海享受者',    cast:['','','']},
+  {d:16, t:'18:00', p:'孤玖梦不醒',    team:'怀香赴孤凉',       cast:['玖玥','','']},
+  {d:16, t:'22:00', p:'玖玥',         team:'久寒逢佳阳',       cast:['AcCLR','烛萤','']},
+
+  {d:17, t:'14:00', p:'柃灵',         team:'堵灵可可',         cast:['','AcCLR','']},
+  {d:17, t:'18:00', p:'渚&汐',        team:'PTZE喷气背包批发商',  cast:['普通集批','','']},
+  {d:17, t:'22:00', p:'逢生FU',       team:'久寒逢佳阳',       cast:['','','']},
+
+  {d:18, t:'13:00', p:'我长颈鹿懂了',   team:'银不了的游戏',     cast:['普通集批','烛萤','']},
+  {d:18, t:'18:00', p:'',            team:'',               cast:['','','']},
+  {d:18, t:'22:00', p:'Amaryllis',   team:'黑流树海享受者',    cast:['','','']},
+
+  {d:19, t:'15:00', p:'凉笙',         team:'怀香赴孤凉',       cast:['','逢生','普通集批']},
+  {d:19, t:'19:00', p:'白鸣',         team:'追忆铁锤队',       cast:['','','']}
+];
+
+const ORDER = ['久寒逢佳阳','PTZE喷气背包批发商','追忆铁锤队','银不了的游戏',
+               '黑流树海享受者','怀香赴孤凉','不期出马头…队','堵灵可可'];
+const FULLNAME = {'不期出马头…队':'不期出马头，我大喊nice，这样就可以筛掉马头出追忆了队'};
+const CAP = 3;  // 表里"解说"跨 3 个子列 = 3 席
+
+/* ============ 工具 ============ */
+const $ = id => document.getElementById(id);
+const filled = r => r.cast.filter(Boolean).length;
+const isFull = r => filled(r) >= CAP;
+function fmtDate(r){ return `11月${r.d}日`; }
+function fmtWhen(r){ return `11月${r.d}日 ${WD[r.d]} ${r.t}`; }
+
+/* ============ 渲染 ============ */
+function renderStats(){
+  const total = D.length;
+  const played = D.filter(r => r.p).length;
+  const fullCnt = D.filter(r => r.p && isFull(r)).length;
+  const empty = D.filter(r => !r.p).length;
+  $('stats').innerHTML = [
+    `<div class="stat p"><b>${ORDER.length}</b> 支队伍</div>`,
+    `<div class="stat"><b>${played}</b> 名选手</div>`,
+    `<div class="stat"><b>${total}</b> 个场次</div>`,
+    `<div class="stat g"><b>${fullCnt}</b> 场解说席已满</div>`,
+    `<div class="stat a"><b>${empty}</b> 个场次待定</div>`
+  ].join('');
+}
+
+function renderFullList(){
+  const rows = D.filter(r => r.p && isFull(r));
+  $('fullCount').textContent = `（${rows.length} 场 · 按时间排序）`;
+  $('fullList').innerHTML = rows.map(r =>
+    `<li><b>${fmtWhen(r)}</b> · ${r.p}（${r.team}）— 解说 ${r.cast.filter(Boolean).join(' / ')}</li>`
+  ).join('') || '<li>暂无</li>';
+}
+
+function renderTeams(){
+  const box = $('teams');
+  let h = '';
+  ORDER.forEach(name=>{
+    const rows = D.filter(r => r.team === name);
+    const cnt = rows.length;
+    const cls = cnt >= 4 ? 'full' : 'short';
+    const title = FULLNAME[name] || name;
+    h += `<div class="team">
+      <div class="team-h" title="${esc(title)}">
+        <div class="dot"></div>
+        <div class="tname">${esc(name)}</div>
+        <div class="cnt ${cls}">${cnt} 人</div>
+      </div>`;
+    rows.forEach(r=>{
+      const n = filled(r);
+      const names = r.cast.filter(Boolean);
+      const seats = names.length
+        ? names.map(c => `<span class="seat">${esc(c)}</span>`).join('')
+        : `<span class="seat none">未排解说</span>`;
+      const tag = n >= CAP ? '<span class="tag f">解说席已满</span>'
+                 : n === 0  ? ''
+                 : `<span class="tag m">缺 ${CAP-n} 席</span>`;
+      h += `<div class="prow">
+        <div class="ptime">
+          <div class="pd">11/${r.d}</div>
+          <div class="pwd">${WD[r.d]}</div>
+          <div class="pt">${r.t}</div>
+        </div>
+        <div class="pinfo">
+          <div class="pname">${esc(r.p)}</div>
+          <div class="pcast">${names.length ? '解说 ' + seats : seats} ${tag}</div>
+        </div>
+      </div>`;
+    });
+    // 名额未满的队伍，补一行提示
+    if(cnt < 4){
+      h += `<div class="prow empty">
+        <div class="ptime"><div class="pt" style="color:var(--dim);font-size:13px">待定</div></div>
+        <div class="pinfo">
+          <div class="pname" style="color:var(--dim);font-weight:500">还有 ${4-cnt} 人未排期</div>
+          <div class="pcast">赛程表里仍有 4 个空档未填</div>
+        </div>
+      </div>`;
+    }
+    h += `</div>`;
+  });
+  box.innerHTML = h;
+}
+
+function renderTable(){
+  let h = '';
+  D.forEach(r=>{
+    const n = filled(r);
+    const tag = !r.p ? '<span class="tag n">待定</span>'
+      : n >= CAP ? '<span class="tag f">已满</span>'
+      : n === 0 ? '<span class="tag n">未排</span>'
+      : `<span class="tag m">${n}/${CAP}</span>`;
+    h += `<tr${!r.p ? ' style="opacity:.55"' : ''}>
+      <td class="when">${r.d}日 <span class="wd">${WD[r.d]}</span> <b>${r.t}</b></td>
+      <td class="who">${r.p ? esc(r.p) : '—'}</td>
+      <td class="team">${r.team ? esc(r.team) : '—'}</td>
+      <td class="ca">${tag}</td>
+    </tr>`;
+  });
+  $('tbody').innerHTML = h;
+}
+
+function renderFoot(){
+  $('foot').innerHTML = `
+    <b>说明</b><br>
+    · 数据取自《第十届幻术杯赛程解说安排》，已按队伍归类，<b>不含替补 / 替补的替补两列</b>。<br>
+    · "解说"在原表中横跨 3 个子列，即每场 <b>3 个解说席</b>；3 席填满记作<b>解说席已满</b>，否则显示"缺 N 席"。<br>
+    · 原表 32 个场次中有 <b>4 个空档</b>（11/9 14:00、11/10 22:00、11/11 22:00、11/18 18:00）未填选手，故名单共 28 人。<br>
+    · 长队名「不期出马头…队」全称：不期出马头，我大喊nice，这样就可以筛掉马头出追忆了队。`;
+}
+
+function esc(s){
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ============ 复制 ============ */
+function textVersion(){
+  const lines = ['第十届幻术杯 · 参赛名单（按队 · 不含替补）',''];
+  ORDER.forEach(name=>{
+    const rows = D.filter(r => r.team === name);
+    lines.push(`【${FULLNAME[name] || name}】${rows.length} 人`);
+    rows.forEach(r=>{
+      const n = filled(r);
+      const cast = r.cast.filter(Boolean).join('/') || '未排';
+      const st = n >= CAP ? '★解说席已满' : `缺${CAP-n}席`;
+      lines.push(`· ${r.p}　${fmtWhen(r)}　解说：${cast}（${st}）`);
+    });
+    lines.push('');
+  });
+  const full = D.filter(r => r.p && isFull(r));
+  lines.push('解说席已满：' + (full.map(r=>`${fmtWhen(r)} ${r.p}`).join('；') || '无'));
+  return lines.join('\n');
+}
+
+function copyText(t){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(()=>toast('已复制')).catch(()=>{
+      const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      try{document.execCommand('copy'); toast('已复制');}catch(e){alert(t);}
+      document.body.removeChild(ta);
+    });
+  }else{
+    const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{document.execCommand('copy'); toast('已复制');}catch(e){alert(t);}
+    document.body.removeChild(ta);
+  }
+}
+
+let tt=null;
+function toast(m){
+  const el=$('toast'); el.textContent=m; el.classList.add('show');
+  clearTimeout(tt); tt=setTimeout(()=>el.classList.remove('show'),1500);
+}
+
+/* ============ 事件 ============ */
+$('tblToggle').onclick = ()=>{
+  const c = $('tblCard');
+  c.classList.toggle('collapsed');
+  $('btnToggle').textContent = c.classList.contains('collapsed') ? '展开按时间表' : '收起按时间表';
+};
+$('btnToggle').onclick = ()=>{
+  $('tblCard').classList.remove('collapsed');
+  $('tblCard').scrollIntoView({behavior:'smooth', block:'start'});
+  $('btnToggle').textContent = '收起按时间表';
+};
+$('btnCopy').onclick = ()=>copyText(textVersion());
+
+/* ============ 启动 ============ */
+renderStats(); renderFullList(); renderTeams(); renderTable(); renderFoot();
+</script>
+</body>
+</html>
