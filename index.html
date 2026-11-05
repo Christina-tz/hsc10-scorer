@@ -88,27 +88,6 @@
   .switch input:checked ~ .track{background:rgba(167,139,250,.25); border-color:var(--purple);}
   .switch input:checked ~ .knob{left:26px; background:var(--purple);}
 
-  .field input[type=text].manual{display:none; width:112px; padding:9px 6px; font-size:14px;}
-  .field input[type=text].manual.show{display:block;}
-  .pickwrap{display:flex; align-items:center; gap:5px; flex-shrink:0;}
-  .pickwrap select{
-    width:162px; padding:9px 20px 9px 6px; font-size:13px; border-radius:9px;
-    background:var(--card2); color:var(--txt); border:1px solid var(--line);
-    appearance:none; -webkit-appearance:none; text-align:center; cursor:pointer;
-    background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239aa7bf' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat:no-repeat; background-position:right 7px center;
-  }
-  .pickwrap select:focus{outline:none; border-color:var(--acc2);}
-  .pickwrap select:disabled{opacity:.45;}
-  .pickwrap .mini{
-    display:none; width:28px; height:34px; padding:0; border-radius:8px; flex-shrink:0;
-    background:var(--card2); color:var(--sub); border:1px solid var(--line);
-    font-size:13px; cursor:pointer;
-  }
-  .pickwrap .mini.show{display:block;}
-  .pickwrap option{background:var(--card2); color:var(--txt);}
-  .pickwrap optgroup{background:var(--card2); color:var(--dim); font-size:12px;}
-
   /* ---------- Result strip ---------- */
   .calc-strip{
     background:var(--card3); border:1px dashed var(--line); border-radius:10px;
@@ -318,7 +297,6 @@
     .field input[type=text]{width:120px;}
     .actions button{font-size:13.5px;}
     .bottombar button{font-size:12.5px; padding:11px 2px;}
-    .pickwrap select{width:142px; font-size:12px;}
   }
 </style>
 </head>
@@ -348,20 +326,12 @@
     </div>
     <div class="card-body">
       <div class="field">
-        <div class="fname">所属队伍<small>先选队伍，选手列表只筛该队</small></div>
-        <div class="pickwrap">
-          <select id="teamPick"></select>
-          <input type="text" id="teamName" class="manual" placeholder="队名" autocomplete="off">
-          <button type="button" class="mini" id="teamBack" title="返回列表">↩</button>
-        </div>
+        <div class="fname">选手名称</div>
+        <input type="text" id="playerName" placeholder="（选填）" autocomplete="off">
       </div>
       <div class="field">
-        <div class="fname">选手名称<small>选中选手自动带出队名</small></div>
-        <div class="pickwrap">
-          <select id="playerPick"></select>
-          <input type="text" id="playerName" class="manual" placeholder="选手名" autocomplete="off">
-          <button type="button" class="mini" id="playerBack" title="返回列表">↩</button>
-        </div>
+        <div class="fname">所属队伍<small>同队 4 人：3 指引者 + 1 引路人</small></div>
+        <input type="text" id="teamName" placeholder="（选填）" autocomplete="off">
       </div>
       <div class="field">
         <div class="fname">结算分<small>通关结算界面的总分</small></div>
@@ -724,95 +694,6 @@ IDS.extra = buildSection('body-extra', [{title:'其他加分项', prefix:'x', it
    ========================================================= */
 const $ = id => document.getElementById(id);
 const numv = id => { const v = parseFloat($(id).value); return isNaN(v) ? 0 : v; };
-
-/* =========================================================
-   选手 / 队伍 选择器（来自赛程解说安排）
-   ========================================================= */
-const TEAMS = ['久寒逢佳阳','PTZE喷气背包批发商','追忆铁锤队','银不了的游戏',
-               '黑流树海享受者','怀香赴孤凉','不期出马头…队','堵灵可可'];
-
-const PLAYERS = {
-  '久寒逢佳阳':        ['钠镓Channel','绵阳怪兽','玖玥','逢生FU'],
-  'PTZE喷气背包批发商': ['天离beta','皮、蛋、、','E某人QAQ','渚&汐'],
-  '追忆铁锤队':        ['哲三Philosophy_3','青云_YunQing','小小满QwQ','白鸣'],
-  '银不了的游戏':       ['余余银','飘渺','x2048x','我长颈鹿懂了'],
-  '黑流树海享受者':     ['特南辛罗','苏云','里尔','Amaryllis'],
-  '怀香赴孤凉':        ['青岛萌香','怀殇殇殇','孤玖梦不醒','凉笙'],
-  '不期出马头…队':      ['闲空','Pharmacist'],
-  '堵灵可可':          ['欧的堵','柃灵']
-};
-
-let pickTeam = '', pickPlayer = '';
-
-function teamOf(name){
-  for(const t of TEAMS){ if((PLAYERS[t] || []).includes(name)) return t; }
-  return '';
-}
-
-function renderTeamPick(){
-  $('teamPick').innerHTML =
-    `<option value="">全部队伍</option>` +
-    TEAMS.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('') +
-    `<option value="__custom">手动输入…</option>`;
-  $('teamPick').value = pickTeam;
-}
-
-function renderPlayerPick(){
-  const scope = (pickTeam && pickTeam !== '__custom') ? [pickTeam] : TEAMS;
-  let h = `<option value="">${pickTeam ? '该队选手…' : '选择选手…'}</option>`;
-  scope.forEach(t=>{
-    const list = PLAYERS[t] || [];
-    if(!list.length) return;
-    h += `<optgroup label="${esc(t)}">` +
-         list.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('') +
-         `</optgroup>`;
-  });
-  h += `<option value="__custom">手动输入…</option>`;
-  $('playerPick').innerHTML = h;
-  $('playerPick').value = pickPlayer;
-}
-
-function setManual(which, on, val){
-  const sel = which === 'team' ? $('teamPick') : $('playerPick');
-  const inp = which === 'team' ? $('teamName') : $('playerName');
-  const back = which === 'team' ? $('teamBack') : $('playerBack');
-  if(sel) sel.style.display = on ? 'none' : '';
-  inp.classList.toggle('show', on);
-  back.classList.toggle('show', on);
-  if(on){
-    inp.value = val || '';
-    if(!val) setTimeout(()=>inp.focus(), 0);
-  }
-}
-
-/* 根据现有值反查下拉状态（用于读档 / 清空后） */
-function syncPickers(){
-  const p = $('playerName').value.trim();
-  const t = $('teamName').value.trim();
-  const pt = p ? teamOf(p) : '';
-
-  if(p && pt){
-    pickPlayer = p;
-    pickTeam = pt;
-    $('teamName').value = pt;
-  }else if(p){
-    pickPlayer = '__custom';
-    pickTeam = (t && TEAMS.includes(t)) ? t : (t ? '__custom' : '');
-  }else{
-    pickPlayer = '';
-    pickTeam = (t && TEAMS.includes(t)) ? t : (t ? '__custom' : '');
-  }
-
-  renderTeamPick();
-  if(pickTeam === '__custom'){
-    setManual('team', true, t);
-  }else{
-    setManual('team', false);
-  }
-
-  renderPlayerPick();
-  setManual('player', pickPlayer === '__custom', p);
-}
 
 /* =========================================================
    紧急作战：规则计算
@@ -1265,7 +1146,6 @@ function clearInputs(keepTeamName){
   if(!keepTeamName) $('teamName').value = '';
   $('isKy').checked = false;
   $('noBlue').checked = false;
-  syncPickers();
   compute();
 }
 
@@ -1327,9 +1207,8 @@ function saveToTeam(){
   }
   const name = $('playerName').value.trim();
   if(!name){
-    toast('请先选择选手');
-    const inp = $('playerName');
-    (inp.classList.contains('show') ? inp : $('playerPick')).focus();
+    toast('请先填写选手名称');
+    $('playerName').focus();
     return;
   }
   const list = getTeam();
@@ -1464,78 +1343,8 @@ $('teamCombo').addEventListener('change', syncBonus);
 $('teamExtra').addEventListener('input', syncBonus);
 $('teamNote').addEventListener('input', saveBonus);
 
-/* ---------- 队伍 / 选手 联动 ---------- */
-$('teamPick').addEventListener('change', e=>{
-  const v = e.target.value;
-
-  if(v === '__custom'){
-    pickTeam = '__custom';
-    setManual('team', true, '');
-    return;
-  }
-
-  setManual('team', false);
-  pickTeam = v;
-
-  if(v){
-    $('teamName').value = v;
-    if(pickPlayer && pickPlayer !== '__custom' && !(PLAYERS[v] || []).includes(pickPlayer)){
-      pickPlayer = '';
-      $('playerName').value = '';
-      setManual('player', false);
-    }
-  }
-  renderPlayerPick();
-  compute();
-});
-
-$('playerPick').addEventListener('change', e=>{
-  const v = e.target.value;
-
-  if(v === '__custom'){
-    pickPlayer = '__custom';
-    setManual('player', true, '');
-    return;
-  }
-
-  setManual('player', false);
-  pickPlayer = v;
-
-  if(v){
-    $('playerName').value = v;
-    const t = teamOf(v);
-    if(t && t !== pickTeam){
-      pickTeam = t;
-      $('teamName').value = t;
-      setManual('team', false);
-      $('teamPick').value = t;
-      renderPlayerPick();
-      $('playerPick').value = v;
-    }else if(t){
-      $('teamName').value = t;
-    }
-  }else{
-    $('playerName').value = '';
-  }
-  compute();
-});
-
-$('teamBack').onclick = ()=>{
-  pickTeam = ''; $('teamName').value = '';
-  setManual('team', false);
-  renderTeamPick(); renderPlayerPick();
-  compute();
-};
-$('playerBack').onclick = ()=>{
-  pickPlayer = ''; $('playerName').value = '';
-  setManual('player', false);
-  $('playerPick').value = '';
-  compute();
-};
-
 /* ---------- 启动 ---------- */
 loadState();
-syncPickers();
 loadBonus();
 syncBonus();
 renderTeam();
