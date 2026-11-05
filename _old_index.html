@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f1420">
+<title>第十届幻术杯 #10 计分器</title>
+<style>
+  :root{
+    --bg:#0f1420; --card:#1a2233; --card2:#212c42; --card3:#18202f; --line:#2c3a55;
+    --txt:#e8edf7; --sub:#9aa7bf; --dim:#6b788f;
+    --acc:#ffb13d; --acc2:#4da3ff; --good:#35c46b; --bad:#ff5d6c; --purple:#a78bfa;
+    --radius:14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--txt); line-height:1.5; padding-bottom:110px;
+    font-size:15px; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:0 12px;}
+
+  /* ---------- Sticky Header ---------- */
+  .head{
+    position:sticky; top:0; z-index:30;
+    background:rgba(15,20,32,.94); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .head-inner{max-width:760px; margin:0 auto; padding:9px 14px; display:flex; align-items:center; justify-content:space-between; gap:12px;}
+  .head .ttl{min-width:0;}
+  .head h1{font-size:15px; margin:0; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .head .subline{font-size:11px; color:var(--dim); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .total-box{text-align:right; flex-shrink:0;}
+  .total-box .lbl{font-size:10px; color:var(--sub); letter-spacing:.06em;}
+  .total-box .num{font-size:28px; font-weight:800; color:var(--acc); line-height:1.05; font-variant-numeric:tabular-nums;}
+  .total-box .num.neg{color:var(--bad);}
+  .badge{
+    display:inline-block; font-size:10px; font-weight:700; padding:1px 6px; border-radius:5px;
+    background:rgba(167,139,250,.18); color:var(--purple); border:1px solid rgba(167,139,250,.4);
+    margin-left:6px; vertical-align:middle;
+  }
+  .badge.hide{display:none;}
+
+  /* ---------- Cards ---------- */
+  section.card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    margin:12px 0; overflow:hidden;
+  }
+  .card-head{
+    display:flex; align-items:center; gap:9px; padding:13px 14px;
+    cursor:pointer; user-select:none;
+  }
+  .card-head .bar{width:4px; height:16px; border-radius:2px; background:var(--acc2); flex-shrink:0;}
+  .card-head h2{font-size:14px; margin:0; font-weight:700; color:var(--acc2); flex-shrink:0;}
+  .card-head .st{flex:1; text-align:right; font-size:13px; font-weight:700; color:var(--dim); font-variant-numeric:tabular-nums;}
+  .card-head .st.on{color:var(--good);}
+  .card-head .arrow{color:var(--dim); font-size:11px; transition:.2s; flex-shrink:0;}
+  section.card.collapsed .arrow{transform:rotate(-90deg);}
+  section.card.collapsed .card-body{display:none;}
+  .card-body{padding:0 14px 12px;}
+
+  /* ---------- Fields ---------- */
+  .field{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid rgba(44,58,85,.55);}
+  .field:last-child{border-bottom:none;}
+  .field .fname{flex:1; font-size:14px; min-width:0;}
+  .field .fname small{display:block; color:var(--sub); font-size:11.5px; line-height:1.35; margin-top:1px;}
+  .field input[type=text], .field input[type=number]{
+    width:118px; padding:9px 8px; font-size:16px; border-radius:9px; flex-shrink:0;
+    background:var(--card2); color:var(--txt); border:1px solid var(--line); text-align:center;
+    font-variant-numeric:tabular-nums;
+  }
+  .field input[type=text]{width:150px; text-align:left; font-size:15px;}
+  .field input[type=number]:focus, .field input[type=text]:focus{outline:none; border-color:var(--acc2);}
+  .field .unit-tag{font-size:12px; color:var(--dim); flex-shrink:0;}
+
+  /* switch */
+  .switch{position:relative; width:52px; height:30px; flex-shrink:0;}
+  .switch input{position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; z-index:2;}
+  .switch .track{
+    position:absolute; inset:0; border-radius:15px; background:#2c3a55;
+    border:1px solid #3b4c6b; transition:.2s;
+  }
+  .switch .knob{
+    position:absolute; top:4px; left:4px; width:22px; height:22px; border-radius:50%;
+    background:#9aa7bf; transition:.2s;
+  }
+  .switch input:checked ~ .track{background:rgba(167,139,250,.25); border-color:var(--purple);}
+  .switch input:checked ~ .knob{left:26px; background:var(--purple);}
+
+  /* ---------- Result strip ---------- */
+  .calc-strip{
+    background:var(--card3); border:1px dashed var(--line); border-radius:10px;
+    padding:10px 12px; margin:12px 0 2px; font-size:12.5px; color:var(--sub); line-height:1.85;
+  }
+  .calc-strip b{color:var(--txt); font-variant-numeric:tabular-nums;}
+  .calc-strip .hl{color:var(--acc); font-weight:700;}
+  .calc-strip .neg{color:var(--bad);}
+
+  /* ---------- Rows ---------- */
+  .group-title{
+    font-size:11.5px; color:var(--dim); font-weight:700; letter-spacing:.04em;
+    margin:14px 0 4px; padding:3px 9px; background:var(--card2); border-radius:6px; display:inline-block;
+  }
+  .row{
+    display:flex; align-items:center; gap:10px; padding:7px 2px;
+    border-bottom:1px solid rgba(44,58,85,.45);
+  }
+  .row:last-child{border-bottom:none;}
+  .row .nm{flex:1; font-size:14px; min-width:0;}
+  .row .nm .hint{display:block; font-size:11px; color:var(--dim); margin-top:1px;}
+  .row .val{
+    font-size:12.5px; font-weight:700; color:var(--dim); min-width:44px; text-align:right;
+    flex-shrink:0; font-variant-numeric:tabular-nums;
+  }
+  .row.on .val{color:var(--good);}
+  .row.on{background:rgba(53,196,107,.06); border-radius:8px;}
+  .row.off{opacity:.4; pointer-events:none;}
+
+  .ctrl{display:flex; align-items:center; gap:5px; flex-shrink:0;}
+  .ctrl button{
+    width:32px; height:32px; padding:0; font-size:17px; line-height:1; border-radius:8px; cursor:pointer;
+    background:var(--card2); color:var(--txt); border:1px solid var(--line); font-weight:700;
+  }
+  .ctrl button:active{background:var(--line); transform:scale(.94);}
+  .ctrl input{
+    width:44px; padding:6px 2px; font-size:15px; text-align:center; border-radius:8px;
+    background:var(--card2); color:var(--txt); border:1px solid var(--line);
+    font-variant-numeric:tabular-nums; -moz-appearance:textfield;
+  }
+  .ctrl input::-webkit-outer-spin-button,
+  .ctrl input::-webkit-inner-spin-button{-webkit-appearance:none; margin:0;}
+  .ctrl input:focus{outline:none; border-color:var(--acc2);}
+  .ctrl input:not(:placeholder-shown){}
+
+  /* check row */
+  .checkrow{display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid rgba(44,58,85,.45);}
+  .checkrow:last-child{border-bottom:none;}
+  .checkrow input[type=checkbox]{width:22px; height:22px; accent-color:var(--acc); flex-shrink:0; cursor:pointer;}
+  .checkrow .nm{flex:1; font-size:14px;}
+  .checkrow .nm .hint{display:block; font-size:11px; color:var(--dim);}
+  .checkrow .val{font-size:13px; font-weight:700; color:var(--dim); flex-shrink:0; font-variant-numeric:tabular-nums;}
+  .checkrow.on .val{color:var(--bad);}
+  .checkrow.off{opacity:.4; pointer-events:none;}
+  .checkrow{cursor:pointer;}
+
+  /* ---------- 紧急作战：记录 ---------- */
+  .iblock{border-bottom:1px solid rgba(44,58,85,.45);}
+  .iblock:last-child{border-bottom:none;}
+  .iblock > .row{border-bottom:none;}
+  .iblock .cnt[readonly]{color:var(--acc); cursor:pointer; background:var(--card3);}
+  .recs{margin:0 0 9px; border:1px solid var(--line); border-radius:9px; overflow:hidden;}
+  .recs:empty{display:none;}
+  .recs table{width:100%; border-collapse:collapse; font-size:11.5px;}
+  .recs th{
+    text-align:left; font-weight:600; color:var(--dim); font-size:10.5px;
+    padding:5px 8px; background:var(--card3); border-bottom:1px solid var(--line);
+  }
+  .recs td{padding:5px 8px; border-bottom:1px solid rgba(44,58,85,.45); color:var(--sub);}
+  .recs tr:last-child td{border-bottom:none;}
+  .recs td.n{text-align:right; color:var(--good); font-weight:700; font-variant-numeric:tabular-nums;}
+  .recs td.i{color:var(--dim); width:22px;}
+  .recs .chip{
+    display:inline-block; font-size:10px; padding:0 5px; border-radius:4px; margin-right:3px;
+    background:var(--card2); border:1px solid var(--line); color:var(--sub);
+  }
+  .recs .chip.on{color:var(--acc); border-color:rgba(255,177,61,.4); background:rgba(255,177,61,.10);}
+  .recs .chip.bad{color:var(--bad); border-color:rgba(255,93,108,.4); background:rgba(255,93,108,.10);}
+  .recs .rdel{
+    width:20px; height:20px; border-radius:5px; border:1px solid var(--line);
+    background:transparent; color:var(--dim); cursor:pointer; font-size:12px; line-height:1; padding:0;
+  }
+  .recs .rdel:active{color:var(--bad); border-color:var(--bad);}
+  .note-tip{
+    font-size:11px; color:var(--dim); margin:2px 0 6px; padding:6px 9px;
+    background:rgba(77,163,255,.07); border-left:2px solid var(--acc2); border-radius:0 6px 6px 0; line-height:1.6;
+  }
+
+  /* ---------- 弹窗 ---------- */
+  .mask{
+    position:fixed; inset:0; z-index:80; display:none;
+    background:rgba(6,10,18,.72); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);
+    align-items:flex-end; justify-content:center;
+  }
+  .mask.show{display:flex;}
+  .sheet{
+    width:100%; max-width:460px; background:var(--card); border:1px solid var(--line);
+    border-radius:16px 16px 0 0; padding:16px 16px calc(14px + env(safe-area-inset-bottom));
+    animation:sheetUp .18s ease-out;
+  }
+  @media(min-width:560px){
+    .mask{align-items:center; padding:16px;}
+    .sheet{border-radius:16px;}
+  }
+  @keyframes sheetUp{from{transform:translateY(16px); opacity:.5;} to{transform:none; opacity:1;}}
+  .sheet-h{display:flex; align-items:baseline; gap:8px; margin-bottom:12px;}
+  .sheet-h .t{font-size:16px; font-weight:800; flex:1;}
+  .sheet-h .b{font-size:12px; color:var(--sub);}
+  .opt{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; margin-bottom:8px;
+    border-radius:11px; background:var(--card2); border:1px solid var(--line); cursor:pointer; transition:.12s;
+  }
+  .opt.on{border-color:var(--acc); background:rgba(255,177,61,.10);}
+  .opt .box{
+    width:20px; height:20px; border-radius:6px; border:1.5px solid var(--line); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:13px; color:transparent; font-weight:800;
+  }
+  .opt.on .box{background:var(--acc); border-color:var(--acc); color:#22180a;}
+  .opt .t{flex:1; font-size:13.5px; min-width:0;}
+  .opt .t small{display:block; color:var(--sub); font-size:11px; line-height:1.4; margin-top:1px;}
+  .opt .x{font-size:11px; color:var(--acc); font-weight:700; flex-shrink:0;}
+  .prev{
+    background:var(--card3); border:1px dashed var(--line); border-radius:10px;
+    padding:10px 12px; font-size:12px; color:var(--sub); line-height:1.85; margin:10px 0 12px;
+  }
+  .prev .row-line{display:flex; justify-content:space-between; gap:8px;}
+  .prev .row-line b{color:var(--txt); font-variant-numeric:tabular-nums;}
+  .prev .fin{
+    display:flex; align-items:baseline; justify-content:space-between; gap:8px;
+    margin-top:7px; padding-top:7px; border-top:1px dashed var(--line);
+  }
+  .prev .fin .lb{font-size:12px; color:var(--sub);}
+  .prev .fin .vv{font-size:21px; font-weight:800; color:var(--acc); font-variant-numeric:tabular-nums;}
+  .sheet-a{display:flex; gap:9px;}
+  .sheet-a button{
+    flex:1; padding:12px; font-size:14.5px; font-weight:700; border-radius:11px; cursor:pointer; border:1px solid var(--line);
+    background:var(--card2); color:var(--sub);
+  }
+  .sheet-a button.ok{flex:1.4; background:var(--acc); color:#20160a; border-color:transparent;}
+
+  /* ---------- Actions ---------- */
+  .actions{display:flex; gap:9px; margin:16px 0 4px;}
+  .actions button{
+    flex:1; padding:13px 8px; font-size:14.5px; font-weight:700; border-radius:12px; cursor:pointer; border:1px solid transparent;
+  }
+  .btn-primary{background:var(--acc); color:#20160a;}
+  .btn-blue{background:var(--acc2); color:#fff;}
+  .btn-ghost{background:var(--card2); color:var(--sub); border-color:var(--line);}
+  .actions button:active{transform:scale(.98);}
+  .hintline{font-size:11.5px; color:var(--dim); text-align:center; margin-top:10px; line-height:1.7;}
+
+  /* ---------- Team ---------- */
+  .team-item{
+    display:flex; align-items:center; gap:9px; padding:9px 2px; border-bottom:1px solid rgba(44,58,85,.45);
+  }
+  .team-item:last-child{border-bottom:none;}
+  .team-item .idx{font-size:11px; color:var(--dim); width:18px; flex-shrink:0; text-align:center; font-variant-numeric:tabular-nums;}
+  .team-item .tn{flex:1; font-size:14px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .team-item .role{font-size:10px; padding:1px 5px; border-radius:4px; background:var(--card2); color:var(--sub); flex-shrink:0; border:1px solid var(--line);}
+  .team-item .role.ky{color:var(--purple); border-color:rgba(167,139,250,.45); background:rgba(167,139,250,.12);}
+  .team-item .ts{font-size:15px; font-weight:800; color:var(--acc); font-variant-numeric:tabular-nums; flex-shrink:0;}
+  .team-item .del{
+    width:26px; height:26px; border-radius:7px; border:1px solid var(--line); background:transparent;
+    color:var(--dim); cursor:pointer; font-size:14px; line-height:1; flex-shrink:0;
+  }
+  .team-item .del:active{color:var(--bad); border-color:var(--bad);}
+  .totbox{border-top:1px solid var(--line); margin-top:8px; padding-top:9px;}
+  .totbox .tline{display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:3px 2px; font-size:12.5px; color:var(--sub);}
+  .totbox .tline b{font-weight:700; color:var(--txt); font-variant-numeric:tabular-nums; font-size:13.5px;}
+  .totbox .tline b.g{color:var(--good);}
+  .totbox .tline.grand{border-top:1px dashed var(--line); margin-top:5px; padding-top:7px; font-size:13px;}
+  .totbox .tline.grand b{font-size:19px; color:var(--acc); font-weight:800;}
+  .empty{font-size:12.5px; color:var(--dim); text-align:center; padding:18px 0;}
+
+  /* ---------- Rules ---------- */
+  .rules{font-size:12.5px; color:var(--sub); line-height:1.9;}
+  .rules li{margin-bottom:2px;}
+  .rules ul{margin:0; padding-left:18px;}
+  .rules b{color:var(--txt); font-weight:600;}
+
+  /* ---------- Toast ---------- */
+  #toast{
+    position:fixed; left:50%; bottom:96px; transform:translate(-50%,14px);
+    background:#2b3a55; color:#fff; padding:10px 20px; border-radius:22px; font-size:13.5px; font-weight:600;
+    opacity:0; pointer-events:none; transition:.22s; z-index:99; border:1px solid var(--line);
+    box-shadow:0 8px 24px rgba(0,0,0,.4); white-space:nowrap;
+  }
+  #toast.show{opacity:1; transform:translate(-50%,0);}
+
+  /* ---------- Bottom bar ---------- */
+  .bottombar{
+    position:fixed; left:0; right:0; bottom:0; z-index:25;
+    background:rgba(15,20,32,.95); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    border-top:1px solid var(--line); padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+  }
+  .bottombar-inner{max-width:760px; margin:0 auto; display:flex; gap:8px; align-items:center;}
+  .bottombar .bscore{flex-shrink:0; text-align:left; padding-right:4px; min-width:78px;}
+  .bottombar .bscore .l{font-size:10px; color:var(--dim);}
+  .bottombar .bscore .v{font-size:20px; font-weight:800; color:var(--acc); line-height:1.1; font-variant-numeric:tabular-nums;}
+  .bottombar button{
+    flex:1; padding:11px 4px; font-size:13.5px; font-weight:700; border-radius:11px; cursor:pointer; border:none; white-space:nowrap;
+  }
+
+  @media (max-width:400px){
+    .row .val{min-width:38px; font-size:12px;}
+    .ctrl input{width:40px;}
+    .field input[type=text]{width:120px;}
+    .actions button{font-size:13.5px;}
+    .bottombar button{font-size:12.5px; padding:11px 2px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <div class="head-inner">
+    <div class="ttl">
+      <h1>第十届幻术杯 <span style="color:var(--acc2)">#10</span><span class="badge hide" id="kyBadge">抗压位 ×1.3</span></h1>
+      <div class="subline" id="headSub">沉沦者的黑流树海 · N16 开局</div>
+    </div>
+    <div class="total-box">
+      <div class="lbl">总分</div>
+      <div class="num" id="totalScore">0</div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ============ 基础信息 ============ -->
+  <section class="card" id="sec-base">
+    <div class="card-head" data-toggle>
+      <div class="bar"></div><h2>基础信息</h2>
+      <div class="st" id="st-base">—</div>
+      <div class="arrow">▾</div>
+    </div>
+    <div class="card-body">
+      <div class="field">
+        <div class="fname">选手名称</div>
+        <input type="text" id="playerName" placeholder="（选填）" autocomplete="off">
+      </div>
+      <div class="field">
+        <div class="fname">所属队伍<small>同队 4 人：3 指引者 + 1 引路人</small></div>
+        <input type="text" id="teamName" placeholder="（选填）" autocomplete="off">
+      </div>
+      <div class="field">
+        <div class="fname">结算分<small>通关结算界面的总分</small></div>
+        <input type="number" id="settleScore" placeholder="0" inputmode="decimal">
+      </div>
+      <div class="field">
+        <div class="fname">零件个数<small>最终结算时扣除：零件数 × 1.5</small></div>
+        <input type="number" id="partsCount" placeholder="0" inputmode="decimal">
+      </div>
+      <div class="field">
+        <div class="fname">是否抗压位<small>【引路人】总分 ×1.3</small></div>
+        <label class="switch">
+          <input type="checkbox" id="isKy">
+          <div class="track"></div><div class="knob"></div>
+        </label>
+      </div>
+
+      <div class="calc-strip" id="calcStrip"></div>
+    </div>
+  </section>
+
+  <!-- ============ 紧急与特殊作战 ============ -->
+  <section class="card" id="sec-urg">
+    <div class="card-head" data-toggle>
+      <div class="bar"></div><h2>紧急与特殊作战</h2>
+      <div class="st" id="st-urg">0</div>
+      <div class="arrow">▾</div>
+    </div>
+    <div class="card-body" id="body-urg"></div>
+  </section>
+
+  <!-- ============ 结局与 BOSS ============ -->
+  <section class="card" id="sec-boss">
+    <div class="card-head" data-toggle>
+      <div class="bar"></div><h2>结局与 BOSS</h2>
+      <div class="st" id="st-boss">0</div>
+      <div class="arrow">▾</div>
+    </div>
+    <div class="card-body" id="body-boss"></div>
+  </section>
+
+  <!-- ============ 其他加分 ============ -->
+  <section class="card" id="sec-extra">
+    <div class="card-head" data-toggle>
+      <div class="bar"></div><h2>其他加分</h2>
+      <div class="st" id="st-extra">0</div>
+      <div class="arrow">▾</div>
+    </div>
+    <div class="card-body" id="body-extra"></div>
+  </section>
+
+  <!-- ============ 扣分与规则 ============ -->
+  <section class="card" id="sec-ded">
+    <div class="card-head" data-toggle>
+      <div class="bar" style="background:var(--bad)"></div>
+      <h2 style="color:var(--bad)">扣分与规则判定</h2>
+      <div class="st" id="st-ded">0</div>
+      <div class="arrow">▾</div>
+    </div>
+    <div class="card-body">
+
+      <div class="checkrow" id="rowNoBlue">
+        <input type="checkbox" id="noBlue">
+        <div class="nm">抗压位全局无蓝图<span class="hint">−500，于 ×1.3 之后结算（仅抗压位适用）</span></div>
+        <div class="val">−500</div>
+      </div>
+
+      <div class="field">
+        <div class="fname">取款总额度（点）<small>第一层商店取钱那一次不计入；上限 200</small></div>
+        <input type="number" id="withdraw" placeholder="0" inputmode="decimal">
+      </div>
+      <div class="field">
+        <div class="fname" style="font-size:12.5px;color:var(--sub)" id="withdrawNote">未超过 200，不扣分</div>
+      </div>
+
+      <div class="field">
+        <div class="fname">比赛时长<small>≥4 小时起扣，每满 30 分钟 −200，上不封顶</small></div>
+        <div class="ctrl" style="gap:4px">
+          <input type="number" id="durH" placeholder="0" inputmode="numeric" style="width:52px">
+          <span style="font-size:12px;color:var(--dim)">时</span>
+          <input type="number" id="durM" placeholder="0" inputmode="numeric" style="width:52px">
+          <span style="font-size:12px;color:var(--dim)">分</span>
+        </div>
+      </div>
+      <div class="field">
+        <div class="fname" style="font-size:12.5px;color:var(--sub)" id="durNote">未满 4 小时，不扣分</div>
+      </div>
+
+      <div class="field">
+        <div class="fname">其他加减分<small>乘算后计入，如探险家 ×1.5 折算、漏怪补扣等，请填正负数</small></div>
+        <input type="number" id="manual" placeholder="0" inputmode="decimal">
+      </div>
+      <div class="field">
+        <div class="fname">备注</div>
+        <input type="text" id="note" placeholder="（选填）" autocomplete="off">
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ 操作 ============ -->
+  <div class="actions">
+    <button class="btn-primary" id="btnSave">保存本局到队伍</button>
+    <button class="btn-ghost" id="btnCopy">复制结果</button>
+    <button class="btn-ghost" id="btnReset" style="flex:.7">重置</button>
+  </div>
+
+  <!-- ============ 队伍加分 ============ -->
+  <section class="card" id="sec-bonus">
+    <div class="card-head" data-toggle>
+      <div class="bar" style="background:var(--good)"></div>
+      <h2 style="color:var(--good)">队伍加分</h2>
+      <div class="st on" id="st-bonus">0</div>
+      <div class="arrow">▾</div>
+    </div>
+    <div class="card-body">
+      <div class="note-tip">队伍级加分，<b>不计入个人总分</b>，只在下方「队伍汇总」中手动叠加。</div>
+
+      <div class="checkrow" id="rowCombo">
+        <input type="checkbox" id="teamCombo">
+        <div class="nm">同队同时击杀 1、2、4 结局 BOSS
+          <span class="hint">每队一次，赛后确认后手动勾选</span>
+        </div>
+        <div class="val" style="color:var(--good)">+300</div>
+      </div>
+
+      <div class="field">
+        <div class="fname">其他队伍加分<small>赛后手动填写，可填负数</small></div>
+        <input type="number" id="teamExtra" placeholder="0" inputmode="decimal">
+      </div>
+      <div class="field">
+        <div class="fname">加分说明</div>
+        <input type="text" id="teamNote" placeholder="（选填）" autocomplete="off">
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 队伍汇总 ============ -->
+  <section class="card" id="sec-team">
+    <div class="card-head" data-toggle>
+      <div class="bar" style="background:var(--acc)"></div>
+      <h2 style="color:var(--acc)">队伍汇总</h2>
+      <div class="st on" id="st-team">0</div>
+      <div class="arrow">▾</div>
+    </div>
+    <div class="card-body">
+      <div class="checkrow" id="rowAuto">
+        <input type="checkbox" id="autoClear" checked>
+        <div class="nm">保存后自动清空本局输入
+          <span class="hint">方便连续记录下一位选手（队伍名会保留）</span>
+        </div>
+      </div>
+      <div id="teamList"></div>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn-blue" id="btnCopyTeam">复制全队结果</button>
+        <button class="btn-ghost" id="btnClearTeam" style="flex:.7">清空</button>
+      </div>
+      <div class="hintline">已保存的成绩存在本机浏览器里，刷新/关闭不会丢失</div>
+    </div>
+  </section>
+
+  <!-- ============ 规则速查 ============ -->
+  <section class="card collapsed" id="sec-rules">
+    <div class="card-head" data-toggle>
+      <div class="bar" style="background:var(--dim)"></div>
+      <h2 style="color:var(--sub)">规则速查</h2>
+      <div class="st"></div>
+      <div class="arrow">▾</div>
+    </div>
+    <div class="card-body">
+      <div class="rules">
+        <ul>
+          <li>以 <b>N16 开局</b>，4 人小组赛：<b>3 位常规位【指引者】+ 1 位抗压位【引路人】</b>。</li>
+          <li>常规位六星<b>限 1 名</b>（机械师不限）；抗压位干员不限，但<b>强制双沙盘</b>，遇到蓝图节点<b>强制拿蓝图</b>。</li>
+          <li>抗压位最终结算分 <b>×1.3</b>；若全局没有蓝图 <b>−500</b>（在 ×1.3 之后结算）。</li>
+          <li>每个分队仅能使用一次；不允许凹种子开局，不允许“随心所欲”开局。</li>
+          <li>取款总额度 <b>200 源石锭</b>；第一层商店取钱仅一次不计入；<b>每超 1 点 −50</b>，可用存钱弥补，不可超 200 上限。</li>
+          <li>比赛时长 <b>≥4 小时</b>开始扣分，<b>每满 30 分钟 −200</b>，上不封顶。</li>
+          <li>最终结算时扣除<b>零件分</b>（零件数 × 1.5）。</li>
+          <li>同一队伍<b>同时击杀 1、2、4 结局 BOSS，额外 +300</b>。</li>
+          <li>BOSS 进入目标点：该关卡<b>分数减半</b>。</li>
+          <li>紧急作战存在探险家且结束时未死亡：关卡加分 <b>×1.5</b>；若无基础加分则 <b>+15</b>。</li>
+          <li>紧急作战漏怪分数减半；持蓝图漏怪正常加分、无漏 ×1.5；<b>探险家加分先于蓝图加分</b>计算。</li>
+          <li>特殊作战中的<b>隐藏（狗鸭熊鼠）不额外加算</b>，仅无漏时加分，漏怪不加。</li>
+          <li><b>禁止抓取果腹</b>，遇到未抓取 <b>+20</b>；被强制获取需另行判定。</li>
+          <li>板藤：获取后进入的第一个商店，<b>离开前必须售出</b>。</li>
+          <li>灰坑：<b>三层</b>保住探险家通关 150 / <b>四层</b> 90 / <b>五层</b> 30。</li>
+          <li>三层以前或进入三层观察节点后，有<b>一次重开</b>机会，行动后不可重开。</li>
+          <li>紧急作战不强制打，误入奇境不强制进入；部分紧急有额外加分。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="hintline">分数实时计算 · 手机 / 电脑均可使用 · 数据存本地</div>
+</div>
+
+<!-- ============ 底部固定条 ============ -->
+<div class="bottombar">
+  <div class="bottombar-inner">
+    <div class="bscore">
+      <div class="l">总分</div>
+      <div class="v" id="totalScore2">0</div>
+    </div>
+    <button class="btn-primary" id="btnSave2" style="background:var(--acc);color:#20160a">保存到队伍</button>
+    <button class="btn-blue" id="btnCopy2" style="background:var(--acc2);color:#fff">复制结果</button>
+  </div>
+</div>
+
+<!-- ============ 紧急作战 记录弹窗 ============ -->
+<div class="mask" id="mask">
+  <div class="sheet">
+    <div class="sheet-h">
+      <div class="t" id="mTitle">紧急作战</div>
+      <div class="b" id="mBase">基础分 0</div>
+    </div>
+
+    <div class="opt" data-opt="e">
+      <div class="box">✓</div>
+      <div class="t">存在探险家且结束时未死亡
+        <small>关卡加分 ×1.5；若无基础加分则改记 +15</small>
+      </div>
+    </div>
+    <div class="opt" data-opt="b">
+      <div class="box">✓</div>
+      <div class="t">持有蓝图
+        <small>漏怪不扣半，无漏额外 ×1.5</small>
+      </div>
+    </div>
+    <div class="opt" data-opt="l">
+      <div class="box">✓</div>
+      <div class="t">有漏怪
+        <small>无蓝图时分数减半；持蓝图不影响</small>
+      </div>
+    </div>
+
+    <div class="prev" id="mPrev"></div>
+
+    <div class="sheet-a">
+      <button id="mCancel">取消</button>
+      <button class="ok" id="mOk">计入得分</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* =========================================================
+   数据配置（分值来自《幻术杯#10加分表》+《第十届幻术杯》规则）
+   ========================================================= */
+/* emg:1 表示"紧急作战"，点 ＋ 会弹窗记录探险家 / 蓝图 / 漏怪 */
+const URGENT = [
+  {n:'圆石技艺', p:90, emg:1},
+  {n:'未来见闻', p:30, emg:1},
+  {n:'取景圣地', p:60, emg:1},
+  {n:'安魂节起义', p:45, emg:1},
+  {n:'丛林法则', p:30, emg:1},
+  {n:'灵魂归宿', p:60, emg:1},
+  {n:'刺生灾害', p:45, emg:1},
+  {n:'命运共享', p:60, emg:1},
+  {n:'同域共存', p:90, emg:1},
+  {n:'贫瘠行军', p:150, emg:1},
+  {n:'不解之缘', p:150, emg:1},
+  {n:'其他紧急', p:15, emg:1},
+];
+
+const SPECIAL = [
+  {n:'陌生旅伴', p:30},
+  {n:'安保措施', p:30},
+  {n:'开业剪彩', p:30},
+  {n:'紧急开业剪彩', p:60},
+  {n:'合伙人会议', p:100},
+  {n:'紧急合伙人会议', p:150},
+  {n:'死箱', p:325},
+  {n:'湖中魇', p:30},
+  {n:'紧急湖中魇', p:50},
+  {n:'“闹乐”', p:50},
+  {n:'“纵怒”', p:60},
+  {n:'“灭身”', p:70},
+  {n:'晶矿惊蝗', p:50},
+];
+
+const HOLES = [
+  {n:'灰坑 · 三层', p:150, hint:'保住探险家通关'},
+  {n:'灰坑 · 四层', p:90,  hint:'保住探险家通关'},
+  {n:'灰坑 · 五层', p:30,  hint:'保住探险家通关'},
+];
+
+const ENDINGS = [
+  {n:'永无安宁', p:50},
+  {n:'痛苦将息', p:100},
+  {n:'混沌源阶理论', p:120},
+  {n:'失恒常量', p:250},
+  {n:'畸症', p:200},
+  {n:'熄日', p:500},
+];
+
+const L3BOSS = [
+  {n:'哀悼铁腕', p:60},
+  {n:'赤金厄运', p:70},
+  {n:'冰冷流亡', p:40},
+];
+
+const EXTRA = [
+  {n:'果腹（遇到未抓取）', p:20, hint:'禁止抓取，未抓取每个 +20'},
+  {n:'隐藏 · 狗鸭熊鼠（无漏）', p:20, hint:'特殊作战中不额外加算，漏怪不加分'},
+];
+
+/* =========================================================
+   渲染
+   ========================================================= */
+function countRow(key, item){
+  const emg = !!item.emg;
+  return `<div class="iblock" data-key="${key}" data-pts="${item.p}" data-emg="${emg?1:0}">
+    <div class="row">
+      <div class="nm">${item.n}${item.hint?`<span class="hint">${item.hint}</span>`:''}</div>
+      <div class="val">+${item.p}</div>
+      <div class="ctrl">
+        <button type="button" data-act="dec">−</button>
+        <input type="number" class="cnt" id="c_${key}" data-key="${key}" data-pts="${item.p}"
+               data-emg="${emg?1:0}" value="0" min="0" step="1" inputmode="numeric"
+               ${emg?'readonly title="点击记录本次通关情况"':''}>
+        <button type="button" data-act="inc">＋</button>
+      </div>
+    </div>
+    ${emg?`<div class="recs" id="recs_${key}"></div>`:''}
+  </div>`;
+}
+
+const SEC = {};
+function buildSection(bodyId, groups){
+  const body = document.getElementById(bodyId);
+  let h = '', ids = [];
+  groups.forEach(g=>{
+    h += `<div class="group-title">${g.title}</div>`;
+    if(g.tip) h += `<div class="note-tip">${g.tip}</div>`;
+    g.items.forEach((it, i)=>{
+      const key = g.prefix + i;
+      ids.push(key);
+      h += countRow(key, it);
+    });
+  });
+  body.innerHTML = h;
+  return ids;
+}
+
+const IDS = {};
+
+IDS.urg   = buildSection('body-urg',   [{title:'紧急作战', prefix:'u', items:URGENT,
+                                        tip:'点 <b>＋</b> 记录这一场：勾选是否有探险家、是否持蓝图、是否漏怪，按规则自动算分并列出明细。'},
+                                        {title:'特殊作战', prefix:'s', items:SPECIAL},
+                                        {title:'灰坑（按层计分）', prefix:'h', items:HOLES}]);
+IDS.boss  = buildSection('body-boss',  [{title:'结局', prefix:'e', items:ENDINGS},
+                                        {title:'三层 BOSS', prefix:'b', items:L3BOSS}]);
+IDS.extra = buildSection('body-extra', [{title:'其他加分项', prefix:'x', items:EXTRA}]);
+
+/* =========================================================
+   计算
+   ========================================================= */
+const $ = id => document.getElementById(id);
+const numv = id => { const v = parseFloat($(id).value); return isNaN(v) ? 0 : v; };
+
+/* =========================================================
+   紧急作战：规则计算
+   ========================================================= */
+const REC = {};                 // key -> [{e,b,l,s}]
+const recSum = k => (REC[k] || []).reduce((a, r) => a + r.s, 0);
+const r1 = n => Math.round(n * 10) / 10;
+
+/* base 基础分；e 探险家存活、b 持蓝图、l 漏怪
+   规则：探险家 ×1.5（无基础分则 +15）→ 漏怪减半（持蓝图不减）→ 无漏且持蓝图 ×1.5 */
+function emgScore(base, e, b, l){
+  const steps = [];
+  let s = base > 0 ? base : 0;
+  steps.push(['关卡基础分', s]);
+
+  if(e){
+    if(base > 0){ s = r1(s * 1.5); steps.push(['探险家存活 ×1.5', s]); }
+    else { s = 15; steps.push(['无基础分，改记 +15', s]); }
+  }
+  if(l){
+    if(b) steps.push(['持蓝图漏怪：不扣半', s]);
+    else { s = r1(s * 0.5); steps.push(['漏怪且无蓝图 ×0.5', s]); }
+  }else{
+    if(b){ s = r1(s * 1.5); steps.push(['无漏且持蓝图 ×1.5', s]); }
+    else steps.push(['无漏无蓝图：按原分', s]);
+  }
+  return {s, steps};
+}
+
+function recText(o){
+  const a = [];
+  if(o.e) a.push('探险家');
+  if(o.b) a.push('蓝图');
+  a.push(o.l ? '漏怪' : '无漏');
+  return a.join(' · ');
+}
+
+function sectionSum(ids){
+  let s = 0;
+  ids.forEach(k=>{
+    const el = $('c_'+k);
+    if(!el) return;
+    if(el.dataset.emg === '1'){ s += recSum(k); }
+    else { s += (parseFloat(el.value) || 0) * (parseFloat(el.dataset.pts) || 0); }
+  });
+  return s;
+}
+
+function fmt(n){
+  n = Math.round(n * 100) / 100;
+  if(Number.isInteger(n)) return n.toLocaleString('zh-CN');
+  return n.toLocaleString('zh-CN', {minimumFractionDigits:1, maximumFractionDigits:2});
+}
+
+let LAST = {total:0, detail:{}};
+
+function compute(){
+  /* --- 加项 --- */
+  const settle = numv('settleScore');
+  const parts  = numv('partsCount');
+  const partsDeduct = parts * 1.5;
+
+  const urg  = sectionSum(IDS.urg);
+  const boss = sectionSum(IDS.boss);
+  const extra = sectionSum(IDS.extra);
+
+  const ky = $('isKy').checked;
+  const mult = ky ? 1.3 : 1;
+
+  const preMult = settle - partsDeduct + urg + boss + extra;
+  const afterMult = preMult * mult;
+
+  /* --- 扣分 --- */
+  let ded = 0;
+  const dedParts = [];
+
+  const noBlue = ky && $('noBlue').checked;
+  if(noBlue){ ded -= 500; dedParts.push('无蓝图 −500'); }
+  $('rowNoBlue').classList.toggle('off', !ky);
+  $('rowNoBlue').classList.toggle('on', noBlue);
+
+  const wd = numv('withdraw');
+  let wOver = Math.max(0, wd - 200);
+  const wPenalty = wOver * 50;
+  if(wOver > 0){
+    ded -= wPenalty;
+    dedParts.push(`取款超 ${fmt(wOver)} 点 −${fmt(wPenalty)}`);
+  }
+  $('withdrawNote').innerHTML = wd <= 0
+    ? '未填取款额度（第一层那一次不计入）'
+    : (wOver > 0
+        ? `取款 ${fmt(wd)} 点，超出 ${fmt(wOver)} 点 → <b style="color:var(--bad)">−${fmt(wPenalty)}</b>`
+        : `取款 ${fmt(wd)} 点，剩余额度 ${fmt(200-wd)} 点，不扣分`);
+
+  const mins = numv('durH') * 60 + numv('durM');
+  let blocks = 0;
+  if(mins >= 240) blocks = Math.max(1, Math.ceil((mins - 240) / 30));
+  const dPenalty = blocks * 200;
+  if(blocks > 0){
+    ded -= dPenalty;
+    dedParts.push(`时长 ${Math.floor(mins/60)}h${mins%60} 超时 ${blocks} 档 −${fmt(dPenalty)}`);
+  }
+  $('durNote').innerHTML = mins <= 0
+    ? '未填时长（有直播计时请以官方计时为准）'
+    : (blocks > 0
+        ? `用时 ${Math.floor(mins/60)} 小时 ${mins%60} 分，超时 ${blocks} 档 → <b style="color:var(--bad)">−${fmt(dPenalty)}</b>`
+        : `用时 ${Math.floor(mins/60)} 小时 ${mins%60} 分，未满 4 小时，不扣分`);
+
+  const manual = numv('manual');
+  if(manual !== 0){
+    ded += manual;
+    dedParts.push(`其他加减 ${manual>0?'+':''}${fmt(manual)}`);
+  }
+
+  const total = afterMult + ded;
+
+  /* --- 展示 --- */
+  const neg = total < 0;
+  $('totalScore').textContent = fmt(total);
+  $('totalScore').classList.toggle('neg', neg);
+  $('totalScore2').textContent = fmt(total);
+  $('totalScore2').style.color = neg ? 'var(--bad)' : 'var(--acc)';
+
+  $('kyBadge').classList.toggle('hide', !ky);
+
+  /* 明细条 */
+  const pName = $('playerName').value.trim();
+  const tName = $('teamName').value.trim();
+  let sub = '沉沦者的黑流树海 · N16 开局';
+  if(tName || pName) sub = [tName, pName, ky?'引路人/抗压位':'指引者/常规位'].filter(Boolean).join(' · ');
+  $('headSub').textContent = sub;
+
+  let strip = `（ 结算 <b>${fmt(settle)}</b> − 零件 <b>${fmt(parts)}</b>×1.5=<b>${fmt(partsDeduct)}</b>`;
+  strip += ` + 紧急 <b>${fmt(urg)}</b> + BOSS <b>${fmt(boss)}</b> + 其他 <b>${fmt(extra)}</b> ）`;
+  strip += ` = <b>${fmt(preMult)}</b>`;
+  if(ky) strip += ` × <b style="color:var(--purple)">1.3</b> = <b>${fmt(afterMult)}</b>`;
+  strip += `<br>扣分：${dedParts.length ? dedParts.join('，') : '无'}`;
+  strip += ` → 总分 <span class="hl">${fmt(total)}</span>`;
+  $('calcStrip').innerHTML = strip;
+
+  /* 分区小计 */
+  setSt('st-urg', urg);
+  setSt('st-boss', boss);
+  setSt('st-extra', extra);
+  setSt('st-ded', ded);
+  $('st-base').textContent = `小计 ${fmt(preMult)}${ky?' ×1.3':''}`;
+
+  /* 行高亮 */
+  document.querySelectorAll('.iblock[data-key]').forEach(b=>{
+    const key = b.dataset.key;
+    const row = b.querySelector('.row');
+    const inp = b.querySelector('.cnt');
+    const p = parseFloat(b.dataset.pts) || 0;
+    const emg = b.dataset.emg === '1';
+    let v, pts;
+    if(emg){
+      v = (REC[key] || []).length;
+      pts = recSum(key);
+      inp.value = v;
+      renderRecs(key);
+    }else{
+      v = parseFloat(inp.value) || 0;
+      pts = v * p;
+    }
+    row.classList.toggle('on', v > 0);
+    row.querySelector('.val').textContent = v > 0 ? `+${fmt(pts)}` : `+${p}`;
+  });
+
+  LAST = {total, settle, parts, partsDeduct, urg, boss, extra, preMult, afterMult, ky, mult, ded, dedParts};
+  saveState();
+  return total;
+}
+
+function setSt(id, v){
+  const el = $(id);
+  el.textContent = v === 0 ? '0' : (v > 0 ? '+' + fmt(v) : fmt(v));
+  el.classList.toggle('on', v !== 0);
+}
+
+/* =========================================================
+   通关记录小表
+   ========================================================= */
+function renderRecs(key){
+  const box = $('recs_'+key);
+  if(!box) return;
+  const list = REC[key] || [];
+  if(!list.length){ box.innerHTML = ''; return; }
+  let h = '<table><thead><tr><th style="width:22px">#</th><th>本场情况</th><th style="text-align:right">得分</th><th style="width:24px"></th></tr></thead><tbody>';
+  list.forEach((o, i)=>{
+    h += `<tr>
+      <td class="i">${i+1}</td>
+      <td>
+        <span class="chip ${o.e?'on':''}">${o.e?'有':'无'}探险家</span>
+        <span class="chip ${o.b?'on':''}">${o.b?'持':'无'}蓝图</span>
+        <span class="chip ${o.l?'bad':'on'}">${o.l?'漏怪':'无漏'}</span>
+      </td>
+      <td class="n">+${fmt(o.s)}</td>
+      <td><button type="button" class="rdel" data-k="${key}" data-i="${i}">×</button></td>
+    </tr>`;
+  });
+  h += '</tbody></table>';
+  box.innerHTML = h;
+}
+
+/* =========================================================
+   紧急作战 弹窗
+   ========================================================= */
+const MODAL = {key:null, e:false, b:false, l:false};
+
+function openModal(key){
+  const block = document.querySelector(`.iblock[data-key="${key}"]`);
+  if(!block) return;
+  MODAL.key = key;
+  MODAL.e = MODAL.b = MODAL.l = false;
+
+  const name = block.querySelector('.nm').childNodes[0].textContent.trim();
+  const base = parseFloat(block.dataset.pts) || 0;
+  $('mTitle').textContent = name;
+  $('mBase').textContent = base > 0 ? `基础分 ${base}` : '无基础分';
+
+  document.querySelectorAll('.opt').forEach(o=>o.classList.remove('on'));
+  refreshModal();
+  $('toast').classList.remove('show');
+  $('mask').classList.add('show');
+}
+
+function refreshModal(){
+  document.querySelectorAll('.opt').forEach(o=>{
+    const k = o.dataset.opt;
+    o.classList.toggle('on', !!MODAL[k]);
+  });
+  const base = parseFloat(document.querySelector(`.iblock[data-key="${MODAL.key}"]`)?.dataset.pts) || 0;
+  const res = emgScore(base, MODAL.e, MODAL.b, MODAL.l);
+  let h = '';
+  res.steps.forEach(([t, v])=>{
+    h += `<div class="row-line"><span>${t}</span><b>${fmt(v)}</b></div>`;
+  });
+  h += `<div class="fin"><span class="lb">本场计入</span><span class="vv">+${fmt(res.s)}</span></div>`;
+  $('mPrev').innerHTML = h;
+}
+
+function closeModal(){ $('mask').classList.remove('show'); MODAL.key = null; }
+
+function submitModal(){
+  if(!MODAL.key) return;
+  const block = document.querySelector(`.iblock[data-key="${MODAL.key}"]`);
+  const base = parseFloat(block.dataset.pts) || 0;
+  const res = emgScore(base, MODAL.e, MODAL.b, MODAL.l);
+  const k = MODAL.key;
+  (REC[k] = REC[k] || []).push({e:MODAL.e?1:0, b:MODAL.b?1:0, l:MODAL.l?1:0, s:res.s});
+  closeModal();
+  compute();
+  toast(`已记录 +${fmt(res.s)}`);
+}
+
+/* =========================================================
+   交互
+   ========================================================= */
+document.addEventListener('click', e=>{
+  /* 点数字框也能开弹窗（紧急作战） */
+  const ci = e.target.closest('.cnt[data-emg="1"]');
+  if(ci){ openModal(ci.dataset.key); return; }
+
+  /* 删除某条通关记录 */
+  const rd = e.target.closest('.rdel');
+  if(rd){
+    const k = rd.dataset.k, i = +rd.dataset.i;
+    if(REC[k]){ REC[k].splice(i, 1); if(!REC[k].length) delete REC[k]; compute(); }
+    return;
+  }
+
+  const btn = e.target.closest('.ctrl button');
+  if(btn){
+    const block = btn.closest('.iblock');
+    const row = btn.closest('.row');
+    const inp = row.querySelector('.cnt');
+    /* 紧急作战：＋ 开弹窗记录，− 撤销最后一条 */
+    if(block && block.dataset.emg === '1'){
+      const k = block.dataset.key;
+      if(btn.dataset.act === 'inc'){ openModal(k); }
+      else{
+        const list = REC[k] || [];
+        if(!list.length){ toast('还没有记录'); return; }
+        list.pop();
+        if(!list.length) delete REC[k];
+        compute();
+        toast('已撤销最后一条记录');
+      }
+      return;
+    }
+
+    let v = parseInt(inp.value) || 0;
+    v = Math.max(0, v + (btn.dataset.act === 'inc' ? 1 : -1));
+    inp.value = v;
+    compute();
+    return;
+  }
+  const head = e.target.closest('[data-toggle]');
+  if(head){ head.closest('section.card').classList.toggle('collapsed'); return; }
+
+  const chkRow = e.target.closest('.checkrow');
+  if(chkRow && e.target.tagName !== 'INPUT'){
+    const cb = chkRow.querySelector('input[type=checkbox]');
+    if(cb){
+      cb.checked = !cb.checked;
+      if(cb.id === 'teamCombo') syncBonus(); else compute();
+    }
+  }
+});
+
+/* 弹窗内交互 */
+document.addEventListener('click', e=>{
+  const opt = e.target.closest('.opt');
+  if(opt && $('mask').classList.contains('show')){
+    const k = opt.dataset.opt;
+    MODAL[k] = !MODAL[k];
+    refreshModal();
+    return;
+  }
+  if(e.target.id === 'mask'){ closeModal(); }
+});
+$('mCancel').onclick = closeModal;
+$('mOk').onclick = submitModal;
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape' && $('mask').classList.contains('show')) closeModal();
+});
+
+document.addEventListener('input', e=>{
+  if(e.target.matches('.cnt, #settleScore, #partsCount, #withdraw, #durH, #durM, #manual, #playerName, #teamName, #note')){
+    compute();
+  }
+});
+document.addEventListener('change', e=>{
+  if(e.target.matches('#isKy, #noBlue, #autoClear')) compute();
+});
+
+/* =========================================================
+   本地存储
+   ========================================================= */
+const SK = 'hsc10-calc-v1';
+const TK = 'hsc10-team-v1';
+
+function saveState(){
+  try{
+    const st = {
+      txt:{playerName:'', teamName:'', note:''},
+      num:{settleScore:1, partsCount:1, withdraw:1, durH:1, durM:1, manual:1},
+      chk:{isKy:0, noBlue:0, autoClear:1},
+      cnt:{},
+      rec:{}
+    };
+    ['playerName','teamName','note'].forEach(id=>st.txt[id] = $(id).value);
+    ['settleScore','partsCount','withdraw','durH','durM','manual'].forEach(id=>st.num[id] = $(id).value);
+    ['isKy','noBlue','autoClear'].forEach(id=>st.chk[id] = $(id).checked);
+    document.querySelectorAll('.cnt').forEach(inp=>{
+      if(inp.dataset.emg !== '1' && (parseFloat(inp.value)||0) !== 0) st.cnt[inp.dataset.key] = inp.value;
+    });
+    Object.keys(REC).forEach(k=>{ if(REC[k] && REC[k].length) st.rec[k] = REC[k]; });
+    localStorage.setItem(SK, JSON.stringify(st));
+  }catch(err){}
+}
+
+function loadState(){
+  let st;
+  try{ st = JSON.parse(localStorage.getItem(SK) || 'null'); }catch(err){ st = null; }
+  if(!st) return;
+  if(st.txt) Object.keys(st.txt).forEach(id=>{ if($(id)) $(id).value = st.txt[id]; });
+  if(st.num) Object.keys(st.num).forEach(id=>{ if($(id)) $(id).value = st.num[id]; });
+  if(st.chk) Object.keys(st.chk).forEach(id=>{ if($(id)) $(id).checked = !!st.chk[id]; });
+  if(st.cnt) Object.keys(st.cnt).forEach(k=>{
+    const el = $('c_'+k);
+    if(el && el.dataset.emg !== '1') el.value = st.cnt[k];
+  });
+  if(st.rec) Object.keys(st.rec).forEach(k=>{
+    const b = document.querySelector(`.iblock[data-key="${k}"]`);
+    if(b && b.dataset.emg === '1') REC[k] = st.rec[k];   // 只恢复紧急作战的记录
+  });
+}
+
+/* =========================================================
+   复制 / 重置 / 队伍
+   ========================================================= */
+function breakdownLines(){
+  const d = LAST;
+  const name = $('playerName').value.trim() || '未填姓名';
+  const team = $('teamName').value.trim();
+  const role = d.ky ? '抗压位【引路人】' : '常规位【指引者】';
+  const lines = [];
+  lines.push(`【第十届幻术杯 #10】${team?team+' · ':''}${name} · ${role}`);
+  lines.push(`结算分：${fmt(d.settle)}`);
+  if(d.parts > 0) lines.push(`零件扣除：${fmt(d.parts)} × 1.5 = −${fmt(d.partsDeduct)}`);
+  if(d.urg) lines.push(`紧急与特殊作战：${d.urg>0?'+':''}${fmt(d.urg)}`);
+  if(d.boss) lines.push(`结局与BOSS：${d.boss>0?'+':''}${fmt(d.boss)}`);
+  if(d.extra) lines.push(`其他加分：${d.extra>0?'+':''}${fmt(d.extra)}`);
+  lines.push(`乘算前小计：${fmt(d.preMult)}`);
+  if(d.ky) lines.push(`抗压位系数 ×1.3 → ${fmt(d.afterMult)}`);
+  lines.push(`扣分：${d.dedParts.length ? d.dedParts.join('，') : '无'}`);
+
+  // 明细
+  const items = [];
+  document.querySelectorAll('.iblock[data-key]').forEach(b=>{
+    const k = b.dataset.key;
+    const nm = b.querySelector('.nm').childNodes[0].textContent.trim();
+    if(b.dataset.emg === '1'){
+      (REC[k] || []).forEach((o, i)=>{
+        items.push(`${nm}第${i+1}场(${recText(o)})=+${fmt(o.s)}`);
+      });
+    }else{
+      const v = parseFloat(b.querySelector('.cnt').value) || 0;
+      if(v > 0) items.push(`${nm}×${v}=+${fmt(v*(parseFloat(b.dataset.pts)||0))}`);
+    }
+  });
+  if(items.length) lines.push(`明细：${items.join('，')}`);
+  const nt = $('note').value.trim();
+  if(nt) lines.push(`备注：${nt}`);
+  lines.push(`—— 总分：${fmt(d.total)} ——`);
+  return lines;
+}
+
+function copyText(text, okMsg){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>toast(okMsg||'已复制到剪贴板')).catch(()=>fallbackCopy(text, okMsg));
+  }else{
+    fallbackCopy(text, okMsg);
+  }
+}
+function fallbackCopy(text, okMsg){
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position='fixed'; ta.style.opacity='0'; ta.style.left='-9999px';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); toast(okMsg||'已复制到剪贴板'); }
+  catch(err){ alert(text); }
+  document.body.removeChild(ta);
+}
+
+let toastTimer = null;
+function toast(msg){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 1600);
+}
+
+function clearInputs(keepTeamName){
+  document.querySelectorAll('.cnt').forEach(i=>i.value = 0);
+  Object.keys(REC).forEach(k=>delete REC[k]);
+  ['settleScore','partsCount','withdraw','durH','durM','manual'].forEach(id=>$(id).value = '');
+  ['playerName','note'].forEach(id=>$(id).value = '');
+  if(!keepTeamName) $('teamName').value = '';
+  $('isKy').checked = false;
+  $('noBlue').checked = false;
+  compute();
+}
+
+function resetAll(){
+  if(!confirm('确定要清空本局所有输入吗？')) return;
+  clearInputs(false);
+  window.scrollTo({top:0, behavior:'smooth'});
+  toast('已重置');
+}
+
+/* ---------- 队伍 ---------- */
+const TBK = 'hsc10-team-bonus-v1';
+
+function bonusTotal(){
+  return ($('teamCombo').checked ? 300 : 0) + (parseFloat($('teamExtra').value) || 0);
+}
+
+function saveBonus(){
+  try{
+    localStorage.setItem(TBK, JSON.stringify({
+      combo: $('teamCombo').checked,
+      other: $('teamExtra').value,
+      note: $('teamNote').value
+    }));
+  }catch(err){}
+}
+
+function loadBonus(){
+  let o;
+  try{ o = JSON.parse(localStorage.getItem(TBK) || 'null'); }catch(err){ o = null; }
+  if(!o) return;
+  $('teamCombo').checked = !!o.combo;
+  $('teamExtra').value = o.other || '';
+  $('teamNote').value = o.note || '';
+}
+
+function syncBonus(){
+  const b = bonusTotal();
+  const el = $('st-bonus');
+  el.textContent = b === 0 ? '0' : (b > 0 ? '+' + fmt(b) : fmt(b));
+  el.classList.toggle('on', b !== 0);
+  $('rowCombo').classList.toggle('on', $('teamCombo').checked);
+  saveBonus();
+  renderTeam();
+}
+
+function getTeam(){
+  try{ return JSON.parse(localStorage.getItem(TK) || '[]'); }catch(err){ return []; }
+}
+function setTeam(list){
+  try{ localStorage.setItem(TK, JSON.stringify(list)); }catch(err){}
+  renderTeam();
+}
+
+function saveToTeam(){
+  const d = LAST;
+  if(!(d.settle > 0) && !confirm('还没填结算分，仍要保存吗？')){
+    return;
+  }
+  const name = $('playerName').value.trim();
+  if(!name){
+    toast('请先填写选手名称');
+    $('playerName').focus();
+    return;
+  }
+  const list = getTeam();
+  const entry = {
+    id: Date.now(),
+    name,
+    team: $('teamName').value.trim(),
+    ky: d.ky,
+    total: Math.round(d.total * 100) / 100,
+    detail: breakdownLines().join('\n'),
+    note: $('note').value.trim(),
+    ts: new Date().toLocaleString('zh-CN', {hour12:false})
+  };
+  const dup = list.findIndex(x => x.name === name && Math.abs(x.total - entry.total) < 0.01);
+  let msg;
+  if(dup >= 0){
+    list[dup] = entry;
+    msg = '已更新该选手成绩';
+  }else{
+    list.push(entry);
+    msg = '已保存到队伍';
+  }
+  list.sort((a,b)=>b.total - a.total);
+  setTeam(list);
+  $('sec-team').classList.remove('collapsed');
+
+  if($('autoClear').checked){
+    clearInputs(true);
+    toast(msg + ' · 可填写下一位');
+    $('playerName').focus();
+    window.scrollTo({top:0, behavior:'smooth'});
+  }else{
+    toast(msg);
+  }
+}
+
+function renderTeam(){
+  const list = getTeam();
+  const box = $('teamList');
+  const bonus = bonusTotal();
+  if(!list.length){
+    box.innerHTML = `<div class="empty">还没有保存成绩<br>填好本局分数后点「保存到队伍」</div>`;
+    $('st-team').textContent = bonus === 0 ? '0' : '+' + fmt(bonus);
+    return;
+  }
+  const sum = list.reduce((a,b)=>a + b.total, 0);
+  const kyCount = list.filter(x=>x.ky).length;
+  const nmCount = list.length - kyCount;
+  const grand = sum + bonus;
+
+  let h = '';
+  list.forEach((it, i)=>{
+    h += `<div class="team-item">
+      <div class="idx">${i+1}</div>
+      <div class="tn">${esc(it.name)}${it.team?`<span style="color:var(--dim);font-size:11.5px"> · ${esc(it.team)}</span>`:''}</div>
+      <div class="role ${it.ky?'ky':''}">${it.ky?'引路人':'指引者'}</div>
+      <div class="ts">${fmt(it.total)}</div>
+      <button class="del" data-del="${it.id}" title="删除">×</button>
+    </div>`;
+  });
+
+  /* 合计区：选手合计 / 队伍加分 / 队伍总分 */
+  h += `<div class="totbox">
+      <div class="tline"><span>选手合计（共 ${list.length} 人 · 指引者 ${nmCount} / 引路人 ${kyCount}）</span><b>${fmt(sum)}</b></div>
+      <div class="tline"><span>队伍加分${teamBonusDesc()?'（'+teamBonusDesc()+'）':''}</span><b class="g">${bonus>0?'+':''}${fmt(bonus)}</b></div>
+      <div class="tline grand"><span>队伍总分</span><b>${fmt(grand)}</b></div>
+    </div>`;
+
+  if(list.length === 4 && (kyCount !== 1 || nmCount !== 3)){
+    h += `<div style="font-size:11.5px;color:var(--bad);padding-top:6px">⚠ 标准小队应为 3 指引者 + 1 引路人</div>`;
+  }
+  box.innerHTML = h;
+  $('st-team').textContent = fmt(grand);
+}
+
+function teamBonusDesc(){
+  const a = [];
+  if($('teamCombo').checked) a.push('1·2·4 结局 BOSS +300');
+  const o = parseFloat($('teamExtra').value) || 0;
+  if(o) a.push(`其他 ${o>0?'+':''}${fmt(o)}`);
+  return a.join('，');
+}
+
+function esc(s){
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+document.getElementById('teamList').addEventListener('click', e=>{
+  const b = e.target.closest('[data-del]');
+  if(!b) return;
+  if(!confirm('删除这条成绩？')) return;
+  const id = Number(b.dataset.del);
+  setTeam(getTeam().filter(x=>x.id !== id));
+  toast('已删除');
+});
+
+function copyTeam(){
+  const list = getTeam();
+  const bonus = bonusTotal();
+  if(!list.length && bonus === 0){ toast('队伍里还没有成绩'); return; }
+  const sum = list.reduce((a,b)=>a + b.total, 0);
+  const lines = ['【第十届幻术杯 #10】队伍成绩汇总'];
+  list.forEach((it, i)=>{
+    lines.push(`${i+1}. ${it.name}${it.ky?'（引路人 ×1.3）':'（指引者）'}：${fmt(it.total)}`);
+  });
+  lines.push(`选手合计：${fmt(sum)}`);
+  if(bonus !== 0) lines.push(`队伍加分：${bonus>0?'+':''}${fmt(bonus)}${teamBonusDesc()?'（'+teamBonusDesc()+'）':''}`);
+  lines.push(`—— 队伍总分：${fmt(sum + bonus)} ——`);
+  copyText(lines.join('\n'), '已复制全队结果');
+}
+
+/* ---------- 绑定 ---------- */
+$('btnCopy').onclick  = ()=>copyText(breakdownLines().join('\n'));
+$('btnCopy2').onclick = ()=>copyText(breakdownLines().join('\n'));
+$('btnSave').onclick  = saveToTeam;
+$('btnSave2').onclick = saveToTeam;
+$('btnReset').onclick = resetAll;
+$('btnCopyTeam').onclick = copyTeam;
+$('btnClearTeam').onclick = ()=>{
+  if(!getTeam().length && bonusTotal() === 0){ toast('队伍已经是空的'); return; }
+  if(!confirm('清空队伍里所有成绩与队伍加分？此操作不可恢复')) return;
+  setTeam([]);
+  $('teamCombo').checked = false;
+  $('teamExtra').value = '';
+  $('teamNote').value = '';
+  syncBonus();
+  toast('已清空');
+};
+
+/* 队伍加分：手动填，只影响队伍总分，不进个人分 */
+$('teamCombo').addEventListener('change', syncBonus);
+$('teamExtra').addEventListener('input', syncBonus);
+$('teamNote').addEventListener('input', saveBonus);
+
+/* ---------- 启动 ---------- */
+loadState();
+loadBonus();
+syncBonus();
+renderTeam();
+compute();
+</script>
+</body>
+</html>
