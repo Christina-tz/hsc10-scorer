@@ -254,6 +254,12 @@
     color:var(--dim); cursor:pointer; font-size:14px; line-height:1; flex-shrink:0;
   }
   .team-item .del:active{color:var(--bad); border-color:var(--bad);}
+  .totbox{border-top:1px solid var(--line); margin-top:8px; padding-top:9px;}
+  .totbox .tline{display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:3px 2px; font-size:12.5px; color:var(--sub);}
+  .totbox .tline b{font-weight:700; color:var(--txt); font-variant-numeric:tabular-nums; font-size:13.5px;}
+  .totbox .tline b.g{color:var(--good);}
+  .totbox .tline.grand{border-top:1px dashed var(--line); margin-top:5px; padding-top:7px; font-size:13px;}
+  .totbox .tline.grand b{font-size:19px; color:var(--acc); font-weight:800;}
   .empty{font-size:12.5px; color:var(--dim); text-align:center; padding:18px 0;}
 
   /* ---------- Rules ---------- */
@@ -432,6 +438,36 @@
     <button class="btn-ghost" id="btnCopy">复制结果</button>
     <button class="btn-ghost" id="btnReset" style="flex:.7">重置</button>
   </div>
+
+  <!-- ============ 队伍加分 ============ -->
+  <section class="card" id="sec-bonus">
+    <div class="card-head" data-toggle>
+      <div class="bar" style="background:var(--good)"></div>
+      <h2 style="color:var(--good)">队伍加分</h2>
+      <div class="st on" id="st-bonus">0</div>
+      <div class="arrow">▾</div>
+    </div>
+    <div class="card-body">
+      <div class="note-tip">队伍级加分，<b>不计入个人总分</b>，只在下方「队伍汇总」中手动叠加。</div>
+
+      <div class="checkrow" id="rowCombo">
+        <input type="checkbox" id="teamCombo">
+        <div class="nm">同队同时击杀 1、2、4 结局 BOSS
+          <span class="hint">每队一次，赛后确认后手动勾选</span>
+        </div>
+        <div class="val" style="color:var(--good)">+300</div>
+      </div>
+
+      <div class="field">
+        <div class="fname">其他队伍加分<small>赛后手动填写，可填负数</small></div>
+        <input type="number" id="teamExtra" placeholder="0" inputmode="decimal">
+      </div>
+      <div class="field">
+        <div class="fname">加分说明</div>
+        <input type="text" id="teamNote" placeholder="（选填）" autocomplete="off">
+      </div>
+    </div>
+  </section>
 
   <!-- ============ 队伍汇总 ============ -->
   <section class="card" id="sec-team">
@@ -653,17 +689,6 @@ IDS.boss  = buildSection('body-boss',  [{title:'结局', prefix:'e', items:ENDIN
                                         {title:'三层 BOSS', prefix:'b', items:L3BOSS}]);
 IDS.extra = buildSection('body-extra', [{title:'其他加分项', prefix:'x', items:EXTRA}]);
 
-/* 其他加分里补一条 300 分的组合项（复选框） */
-document.getElementById('body-extra').insertAdjacentHTML('beforeend', `
-  <div class="group-title">特殊组合</div>
-  <div class="checkrow" id="rowCombo">
-    <input type="checkbox" id="combo300">
-    <div class="nm">同队同时击杀 1、2、4 结局 BOSS
-      <span class="hint">队伍级额外加分，计入本局其他加分</span>
-    </div>
-    <div class="val" style="color:var(--good)">+300</div>
-  </div>`);
-
 /* =========================================================
    计算
    ========================================================= */
@@ -733,8 +758,7 @@ function compute(){
 
   const urg  = sectionSum(IDS.urg);
   const boss = sectionSum(IDS.boss);
-  let extra  = sectionSum(IDS.extra);
-  if($('combo300').checked) extra += 300;
+  const extra = sectionSum(IDS.extra);
 
   const ky = $('isKy').checked;
   const mult = ky ? 1.3 : 1;
@@ -837,7 +861,6 @@ function compute(){
     row.classList.toggle('on', v > 0);
     row.querySelector('.val').textContent = v > 0 ? `+${fmt(pts)}` : `+${p}`;
   });
-  $('rowCombo').classList.toggle('on', $('combo300').checked);
 
   LAST = {total, settle, parts, partsDeduct, urg, boss, extra, preMult, afterMult, ky, mult, ded, dedParts};
   saveState();
@@ -974,7 +997,10 @@ document.addEventListener('click', e=>{
   const chkRow = e.target.closest('.checkrow');
   if(chkRow && e.target.tagName !== 'INPUT'){
     const cb = chkRow.querySelector('input[type=checkbox]');
-    if(cb){ cb.checked = !cb.checked; compute(); }
+    if(cb){
+      cb.checked = !cb.checked;
+      if(cb.id === 'teamCombo') syncBonus(); else compute();
+    }
   }
 });
 
@@ -1001,7 +1027,7 @@ document.addEventListener('input', e=>{
   }
 });
 document.addEventListener('change', e=>{
-  if(e.target.matches('#isKy, #noBlue, #combo300, #autoClear')) compute();
+  if(e.target.matches('#isKy, #noBlue, #autoClear')) compute();
 });
 
 /* =========================================================
@@ -1015,13 +1041,13 @@ function saveState(){
     const st = {
       txt:{playerName:'', teamName:'', note:''},
       num:{settleScore:1, partsCount:1, withdraw:1, durH:1, durM:1, manual:1},
-      chk:{isKy:0, noBlue:0, combo300:0, autoClear:1},
+      chk:{isKy:0, noBlue:0, autoClear:1},
       cnt:{},
       rec:{}
     };
     ['playerName','teamName','note'].forEach(id=>st.txt[id] = $(id).value);
     ['settleScore','partsCount','withdraw','durH','durM','manual'].forEach(id=>st.num[id] = $(id).value);
-    ['isKy','noBlue','combo300','autoClear'].forEach(id=>st.chk[id] = $(id).checked);
+    ['isKy','noBlue','autoClear'].forEach(id=>st.chk[id] = $(id).checked);
     document.querySelectorAll('.cnt').forEach(inp=>{
       if(inp.dataset.emg !== '1' && (parseFloat(inp.value)||0) !== 0) st.cnt[inp.dataset.key] = inp.value;
     });
@@ -1120,7 +1146,6 @@ function clearInputs(keepTeamName){
   if(!keepTeamName) $('teamName').value = '';
   $('isKy').checked = false;
   $('noBlue').checked = false;
-  $('combo300').checked = false;
   compute();
 }
 
@@ -1132,6 +1157,41 @@ function resetAll(){
 }
 
 /* ---------- 队伍 ---------- */
+const TBK = 'hsc10-team-bonus-v1';
+
+function bonusTotal(){
+  return ($('teamCombo').checked ? 300 : 0) + (parseFloat($('teamExtra').value) || 0);
+}
+
+function saveBonus(){
+  try{
+    localStorage.setItem(TBK, JSON.stringify({
+      combo: $('teamCombo').checked,
+      other: $('teamExtra').value,
+      note: $('teamNote').value
+    }));
+  }catch(err){}
+}
+
+function loadBonus(){
+  let o;
+  try{ o = JSON.parse(localStorage.getItem(TBK) || 'null'); }catch(err){ o = null; }
+  if(!o) return;
+  $('teamCombo').checked = !!o.combo;
+  $('teamExtra').value = o.other || '';
+  $('teamNote').value = o.note || '';
+}
+
+function syncBonus(){
+  const b = bonusTotal();
+  const el = $('st-bonus');
+  el.textContent = b === 0 ? '0' : (b > 0 ? '+' + fmt(b) : fmt(b));
+  el.classList.toggle('on', b !== 0);
+  $('rowCombo').classList.toggle('on', $('teamCombo').checked);
+  saveBonus();
+  renderTeam();
+}
+
 function getTeam(){
   try{ return JSON.parse(localStorage.getItem(TK) || '[]'); }catch(err){ return []; }
 }
@@ -1188,14 +1248,16 @@ function saveToTeam(){
 function renderTeam(){
   const list = getTeam();
   const box = $('teamList');
+  const bonus = bonusTotal();
   if(!list.length){
     box.innerHTML = `<div class="empty">还没有保存成绩<br>填好本局分数后点「保存到队伍」</div>`;
-    $('st-team').textContent = '0';
+    $('st-team').textContent = bonus === 0 ? '0' : '+' + fmt(bonus);
     return;
   }
   const sum = list.reduce((a,b)=>a + b.total, 0);
   const kyCount = list.filter(x=>x.ky).length;
   const nmCount = list.length - kyCount;
+  const grand = sum + bonus;
 
   let h = '';
   list.forEach((it, i)=>{
@@ -1207,15 +1269,27 @@ function renderTeam(){
       <button class="del" data-del="${it.id}" title="删除">×</button>
     </div>`;
   });
-  h += `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 2px 2px;border-top:1px solid var(--line);margin-top:8px">
-      <div style="font-size:13px;color:var(--sub)">共 ${list.length} 人（指引者 ${nmCount} / 引路人 ${kyCount}）</div>
-      <div style="font-size:19px;font-weight:800;color:var(--acc);font-variant-numeric:tabular-nums">${fmt(sum)}</div>
+
+  /* 合计区：选手合计 / 队伍加分 / 队伍总分 */
+  h += `<div class="totbox">
+      <div class="tline"><span>选手合计（共 ${list.length} 人 · 指引者 ${nmCount} / 引路人 ${kyCount}）</span><b>${fmt(sum)}</b></div>
+      <div class="tline"><span>队伍加分${teamBonusDesc()?'（'+teamBonusDesc()+'）':''}</span><b class="g">${bonus>0?'+':''}${fmt(bonus)}</b></div>
+      <div class="tline grand"><span>队伍总分</span><b>${fmt(grand)}</b></div>
     </div>`;
+
   if(list.length === 4 && (kyCount !== 1 || nmCount !== 3)){
     h += `<div style="font-size:11.5px;color:var(--bad);padding-top:6px">⚠ 标准小队应为 3 指引者 + 1 引路人</div>`;
   }
   box.innerHTML = h;
-  $('st-team').textContent = fmt(sum);
+  $('st-team').textContent = fmt(grand);
+}
+
+function teamBonusDesc(){
+  const a = [];
+  if($('teamCombo').checked) a.push('1·2·4 结局 BOSS +300');
+  const o = parseFloat($('teamExtra').value) || 0;
+  if(o) a.push(`其他 ${o>0?'+':''}${fmt(o)}`);
+  return a.join('，');
 }
 
 function esc(s){
@@ -1233,13 +1307,16 @@ document.getElementById('teamList').addEventListener('click', e=>{
 
 function copyTeam(){
   const list = getTeam();
-  if(!list.length){ toast('队伍里还没有成绩'); return; }
+  const bonus = bonusTotal();
+  if(!list.length && bonus === 0){ toast('队伍里还没有成绩'); return; }
   const sum = list.reduce((a,b)=>a + b.total, 0);
   const lines = ['【第十届幻术杯 #10】队伍成绩汇总'];
   list.forEach((it, i)=>{
     lines.push(`${i+1}. ${it.name}${it.ky?'（引路人 ×1.3）':'（指引者）'}：${fmt(it.total)}`);
   });
-  lines.push(`—— 队伍总分：${fmt(sum)} ——`);
+  lines.push(`选手合计：${fmt(sum)}`);
+  if(bonus !== 0) lines.push(`队伍加分：${bonus>0?'+':''}${fmt(bonus)}${teamBonusDesc()?'（'+teamBonusDesc()+'）':''}`);
+  lines.push(`—— 队伍总分：${fmt(sum + bonus)} ——`);
   copyText(lines.join('\n'), '已复制全队结果');
 }
 
@@ -1251,13 +1328,25 @@ $('btnSave2').onclick = saveToTeam;
 $('btnReset').onclick = resetAll;
 $('btnCopyTeam').onclick = copyTeam;
 $('btnClearTeam').onclick = ()=>{
-  if(!getTeam().length){ toast('队伍已经是空的'); return; }
-  if(!confirm('清空队伍里所有成绩？此操作不可恢复')) return;
-  setTeam([]); toast('已清空');
+  if(!getTeam().length && bonusTotal() === 0){ toast('队伍已经是空的'); return; }
+  if(!confirm('清空队伍里所有成绩与队伍加分？此操作不可恢复')) return;
+  setTeam([]);
+  $('teamCombo').checked = false;
+  $('teamExtra').value = '';
+  $('teamNote').value = '';
+  syncBonus();
+  toast('已清空');
 };
+
+/* 队伍加分：手动填，只影响队伍总分，不进个人分 */
+$('teamCombo').addEventListener('change', syncBonus);
+$('teamExtra').addEventListener('input', syncBonus);
+$('teamNote').addEventListener('input', saveBonus);
 
 /* ---------- 启动 ---------- */
 loadState();
+loadBonus();
+syncBonus();
 renderTeam();
 compute();
 </script>
